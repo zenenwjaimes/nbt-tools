@@ -3,8 +3,8 @@ Read/modify NBT files. Extra tools to modify core NBT files in a very popular bl
 
 ```
 usage: main.py [-h] [--loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
-               [--version] --src-path SRC_PATH
-               (--nbt | --chunk-relocator | --map-gen)
+               [--version] --src-path SRC_PATH [--unpacked-nbt]
+               (--nbt | --chunk-relocator | --map-gen | --region)
                [--output-dir OUTPUT_DIR] [--point1 POINT1] [--point2 POINT2]
                [--dest-point DEST_POINT] [--dest-path DEST_PATH]
 
@@ -15,9 +15,12 @@ optional arguments:
   --loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL}
   --version             show program's version number and exit
   --src-path SRC_PATH   Src path for nbt file(s)
+  --unpacked-nbt        Use this option for region files, or nbt files that
+                        aren't gzipped
   --nbt
   --chunk-relocator
   --map-gen
+  --region
 
 Map to Image Generator:
   Image files will be generated from all the map_*.dat files
