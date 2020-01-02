@@ -45,33 +45,41 @@ def tag_name(buf) -> str:
 
     length = length_big_byte | length_small_byte
     tag_name = buf.read(length) if length > 0 else b'root'
-
+    
     return tag_name.decode("utf-8")
 
-def tag_data(tag, buf) -> dict:
+def tag_data(tag, buf, skip_read = False) -> dict:
     if tag == TAG.End:
         return dict({'name': 'end', 'tag': TAG.End, 'fn': 'end'})
 
-    name = tag_name(buf) if tag.value != TAG.End.value else ''
+    name = ""
+        
+    if skip_read == False:
+        name = tag_name(buf) if tag.value != TAG.End.value else ''
+
     fn = tag.name.lower()
    
     return dict({'name': name, 'tag': tag, 'fn': fn})
 
-def read_tag(buf, mutdata):
-    _type = buf.read(1)
-    tag = tag_type(_type) 
+def read_tag(buf, mutdata, typed = False):
+    if typed == False:
+        _type = buf.read(1)
+        tag = tag_type(_type) 
+    else:
+        tag = TAG(typed)
 
     # eof
     if tag == TAG.End: #and _type != b'\x00':
         return
 
-    data = tag_data(tag, buf)
+    data = tag_data(tag, buf, typed)
+
     if data['name'] != 'end':
         mod = nbt_module(data['fn'])
         tag_reader = getattr(mod, 'read')
         mutdata[data['name']] = dict({'type': tag.value, 'value': tag_reader(data, buf, mutdata)})
-
-    read_tag(buf, mutdata)
+    if typed == False:
+        read_tag(buf, mutdata, typed)
 
 def nbt_module(fn):
     return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))

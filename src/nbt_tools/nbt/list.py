@@ -15,7 +15,7 @@ def read(info, buf, mutdata):
 
     for i in range(payloadSize):
         newdata = dict()
-        nbt.read_tag(buf, newdata)
+        nbt.read_tag(buf, newdata, tagId if tagId != nbt.TAG.Compound.value else False)
         tags.append(newdata)
 
     return tags

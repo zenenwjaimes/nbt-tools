@@ -119,8 +119,6 @@ def map_generator(args):
 
     Outputs a normal 128x128 image and a large image, 1024x1024
     """
-    setup_logging(args.loglevel)
-
     src_path = args.src_path
     dest_path = args.output_dir.rstrip('/')
     files = os.listdir(src_path)
@@ -144,6 +142,12 @@ def chunk_relocate(args):
     #output_paths([args.min_x, args.min_y, args.max_x, args.max_y], [args.offset_x, args.offset_y])
 
 
+def parse_nbt_file(args):
+    src_path = args.src_path
+    nbt_data = nbt_main.unpack_nbt_data(src_path)
+    print(nbt_data)
+
+
 def run():
     """Main run command
     """
@@ -154,7 +158,8 @@ def run():
         map_generator(args)
     if args.chunk_relocator:
         chunk_relocate(args)
-
+    if args.nbt:
+        parse_nbt_file(args)
 
 if __name__ == "__main__":
     run()
