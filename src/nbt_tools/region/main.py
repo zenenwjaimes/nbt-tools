@@ -23,7 +23,7 @@ def load_region(filename, debug = False):
     if debug:
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(header)
-        print(filename)
+        print(data)
 
     return data
 
@@ -56,8 +56,6 @@ def get_chunk_data(region_data, chunk, info):
     int_offset = info['loc']['offset'] 
     # max chunk size 1MB, each sector being 4KB, max sectors is 256  
     sector_offset = info['loc']['sectors'] * 4096 
-    print(len(region_data))
-    print('int offset: {}'.format(int_offset))
 
     b0 = region_data[sector_offset+0]
     b1 = region_data[sector_offset+1]
@@ -69,12 +67,13 @@ def get_chunk_data(region_data, chunk, info):
     compressed_data = region_data[sector_offset+5:]
     chunk_data = zlib.decompress(compressed_data[0:length])
 
-    return {'data': chunk_data, 'x': chunk.x, 'z': chunk.z, 'length': length, 'compression': compression_type}
+    chunky = nbt.read_nbt_bytes(chunk_data)
+
+    return {'data': chunk_data, 'chunk': chunky, 'x': chunk.x, 'z': chunk.z, 'length': length, 'compression': compression_type}
 
 
 def get_timestamp_data(header, chunk):
     int_offset = region_math.get_chunk_location(chunk.x, chunk.z)
-    print('len {0} for {1},{2}, offset is {3}'.format(len(header),chunk.x,chunk.z,int_offset))
 
     b0 = header[int_offset+0]
     b1 = header[int_offset+1]
@@ -88,7 +87,6 @@ def get_timestamp_data(header, chunk):
 
 def get_location_data(header, chunk):
     int_offset = region_math.get_chunk_location(chunk.x, chunk.z)
-    print('len {0} for {1},{2}, offset is {3}'.format(len(header),chunk.x,chunk.z,int_offset))
 
     b0 = header[int_offset+0]
     b1 = header[int_offset+1]

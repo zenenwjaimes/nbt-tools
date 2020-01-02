@@ -6,7 +6,6 @@ def byte_length() -> int:
 def read(info, buf, mutdata):
     data = buf.read(byte_length())
     _size = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]
-    fresh_bytes = buf.read(_size * 4)
 
     tags = []
     for i in range(_size):

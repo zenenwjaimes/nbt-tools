@@ -164,7 +164,7 @@ def parse_nbt_file(args):
 
     # nbt files that are not gzipped
     if args.unpacked_nbt:
-        nbt_data = nbt_main.read_nbt_data(src_path)
+        nbt_data = nbt_main.read_nbt_file(src_path)
     # gzipped nbt, need to unpack before reading 
     else:
         nbt_data = nbt_main.unpack_nbt_data(src_path)

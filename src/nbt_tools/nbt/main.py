@@ -1,6 +1,7 @@
 import pprint
 import gzip
 import importlib
+import io
 from enum import Enum
 from nbt_tools.nbt import * 
 
@@ -22,7 +23,15 @@ class TAG(Enum):
 def to_int(byte):
     return int(byte.hex(), 16)
 
-def read_nbt_data(filename: str):
+
+def read_nbt_bytes(byte_data):
+    data = dict()
+    with io.BytesIO(byte_data) as fp:
+        read_tag(fp, data)
+
+    return data
+
+def read_nbt_file(filename: str):
     data = dict()
     with open(filename, 'rb') as fp:
         read_tag(fp, data)
@@ -30,7 +39,7 @@ def read_nbt_data(filename: str):
     return data
 
 
-def unpack_nbt_data(filename: str, fn = gzip.open):
+def unpack_nbt_file(filename: str, fn = gzip.open):
     data = dict()
 
     with fn(filename, 'rb') as fp:
@@ -55,7 +64,7 @@ def tag_name(buf) -> str:
 
     length = length_big_byte | length_small_byte
     tag_name = buf.read(length) if length > 0 else b'root'
-    
+
     return tag_name.decode("utf-8")
 
 def tag_data(tag, buf, skip_read = False) -> dict:
