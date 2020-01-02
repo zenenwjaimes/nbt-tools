@@ -22,17 +22,27 @@ class TAG(Enum):
 def to_int(byte):
     return int(byte.hex(), 16)
 
-def unpack_nbt_data(filename: str):
+def read_nbt_data(filename: str):
     data = dict()
-
-    with gzip.open(filename, 'rb') as fp:
+    with open(filename, 'rb') as fp:
         read_tag(fp, data)
 
     return data
 
+
+def unpack_nbt_data(filename: str, fn = gzip.open):
+    data = dict()
+
+    with fn(filename, 'rb') as fp:
+        read_tag(fp, data)
+
+    return data
+
+
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
     return TAG(to_int(_tag_type))
+
 
 def tag_name(buf) -> str:
     length_big_byte = to_int(buf.read(1)) << 8
@@ -61,6 +71,7 @@ def tag_data(tag, buf, skip_read = False) -> dict:
    
     return dict({'name': name, 'tag': tag, 'fn': fn})
 
+
 def read_tag(buf, mutdata, typed = False):
     if typed == False:
         _type = buf.read(1)
@@ -80,6 +91,7 @@ def read_tag(buf, mutdata, typed = False):
         mutdata[data['name']] = dict({'type': tag.value, 'value': tag_reader(data, buf, mutdata)})
     if typed == False:
         read_tag(buf, mutdata, typed)
+
 
 def nbt_module(fn):
     return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))

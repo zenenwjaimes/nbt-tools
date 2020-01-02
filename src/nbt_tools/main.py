@@ -18,6 +18,7 @@ from nbt_tools import __version__
 from nbt_tools.region import math
 from nbt_tools.nbt import main as nbt_main
 from nbt_tools.mcfiles import main as maps
+from nbt_tools.region import main as region
 
 __author__ = "zenen jaimes"
 __copyright__ = "zenen jaimes"
@@ -90,10 +91,12 @@ def parse_args(args):
         version="nbt_tools {ver}".format(ver=__version__))
 
     parser.add_argument('--src-path', help='Src path for nbt file(s)', required=True)
+    parser.add_argument('--unpacked-nbt', action='store_true', help='Use this option for region files, or nbt files that aren\'t gzipped', default=False)
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--nbt', action='store_true')
     group.add_argument('--chunk-relocator', action='store_true')
     group.add_argument('--map-gen', action='store_true')
+    group.add_argument('--region', action='store_true')
     map_group = parser.add_argument_group('Map to Image Generator', 'Image files will be generated from all the map_*.dat files')
     map_group.add_argument('--output-dir', help='dir path of where map images will be saved', default="./maps")
     chunk_relocator_group = parser.add_argument_group('Chunk Relocator', 'Move chunk files from one save to another with an x,z offset')
@@ -143,15 +146,32 @@ def chunk_relocate(args):
     #output_paths([args.min_x, args.min_y, args.max_x, args.max_y], [args.offset_x, args.offset_y])
 
 
+def parse_region_file(args):
+    src_path = args.src_path
+    nbt_data = {}
+
+    debug = True if args.loglevel == 'DEBUG' else False
+    nbt_data = region.load_region(src_path, debug)
+
+    if debug:
+        pp = pprint.PrettyPrinter(indent=1)
+        pp.pprint(nbt_data)
+
+
 def parse_nbt_file(args):
     src_path = args.src_path
-    nbt_data = nbt_main.unpack_nbt_data(src_path)
+    nbt_data = {}
+
+    # nbt files that are not gzipped
+    if args.unpacked_nbt:
+        nbt_data = nbt_main.read_nbt_data(src_path)
+    # gzipped nbt, need to unpack before reading 
+    else:
+        nbt_data = nbt_main.unpack_nbt_data(src_path)
 
     if args.loglevel == 'DEBUG':
-        pp = pprint.PrettyPrinter(indent=4)
+        pp = pprint.PrettyPrinter(indent=1)
         pp.pprint(nbt_data)
- 
-
 
 
 def run():
@@ -166,6 +186,8 @@ def run():
         chunk_relocate(args)
     if args.nbt:
         parse_nbt_file(args)
+    if args.region:
+        parse_region_file(args)
 
 if __name__ == "__main__":
     run()

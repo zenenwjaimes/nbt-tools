@@ -1,5 +1,8 @@
 import math
 
+def pickle():
+    return 1
+
 def coord_to_region(x, z):
     assert x > -30000000 and x < 30000000, "Invalid x coord"
     assert z > -30000000 and z < 30000000, "Invalid z coord"
