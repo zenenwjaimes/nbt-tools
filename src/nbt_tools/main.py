@@ -11,6 +11,7 @@ import logging
 import shutil
 import os.path
 import os, fnmatch
+import pprint
 
 from os import path
 from nbt_tools import __version__
@@ -145,7 +146,12 @@ def chunk_relocate(args):
 def parse_nbt_file(args):
     src_path = args.src_path
     nbt_data = nbt_main.unpack_nbt_data(src_path)
-    print(nbt_data)
+
+    if args.loglevel == 'DEBUG':
+        pp = pprint.PrettyPrinter(indent=4)
+        pp.pprint(nbt_data)
+ 
+
 
 
 def run():
