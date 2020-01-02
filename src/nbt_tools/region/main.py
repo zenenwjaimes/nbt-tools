@@ -1,8 +1,8 @@
 from nbt_tools.nbt import main as nbt
 from nbt_tools.region import math as region_math
 import collections
-
 import pprint
+import zlib
 
 Point = collections.namedtuple('Point', 'x y')
 Chunk = collections.namedtuple('Chunk', 'x z')
@@ -14,8 +14,9 @@ def load_region(filename, debug = False):
 
     with open(filename, 'rb') as fp:
         header_data = fp.read(8192)
+        region_data = fp.read()
 
-    data = parse_header(header_data)
+    data = parse_region_data(header_data, region_data)
 
     #nbt_data = nbt.unpack_nbt_data(filename)
 
@@ -27,7 +28,7 @@ def load_region(filename, debug = False):
     return data
 
 
-def parse_header(header):
+def parse_region_data(header, region_data):
     chunks = {}
     locations = []
     timestamps = []
@@ -36,25 +37,39 @@ def parse_header(header):
                              for z in range(16)]
 
     temp_header = bytes(header[0:4096])
+    temp_chunk_data = bytes(region_data)
 
     for coords in location_tuples:
         chunk = Chunk._make(coords)
-        locations.append(get_location_data(temp_header, chunk))
-        timestamps.append(get_timestamp_data(temp_header, chunk))
+
+        chunk_loc_data = get_location_data(temp_header, chunk)
+        chunk_ts_data = get_timestamp_data(temp_header, chunk)
+
+        locations.append(chunk_loc_data)
+        timestamps.append(chunk_ts_data)
+        chunks[chunk] = get_chunk_data(temp_chunk_data, chunk, {'loc': chunk_loc_data, 'ts': chunk_ts_data})
 
     return {'locations': locations, 'timestamps': timestamps, 'chunks': chunks}
 
 
-def get_chunk_data(region_data, chunk):
+def get_chunk_data(region_data, chunk, info):
+    int_offset = info['loc']['offset'] 
+    # max chunk size 1MB, each sector being 4KB, max sectors is 256  
+    sector_offset = info['loc']['sectors'] * 4096 
+    print(len(region_data))
+    print('int offset: {}'.format(int_offset))
 
-    b0 = header[int_offset+0]
-    b1 = header[int_offset+1]
-    b2 = header[int_offset+2]
-    b3 = header[int_offset+3]
+    b0 = region_data[sector_offset+0]
+    b1 = region_data[sector_offset+1]
+    b2 = region_data[sector_offset+2]
+    b3 = region_data[sector_offset+3]
+    compression_type = region_data[sector_offset+4]
 
-    _int = (b0 << 25) | (b1 << 16) | (b2 << 8) | b3
+    length = (b0 << 25) | (b1 << 16) | (b2 << 8) | b3
+    compressed_data = region_data[sector_offset+5:]
+    chunk_data = zlib.decompress(compressed_data[0:length])
 
-    return {'ts': _int, 'x': chunk.x, 'z': chunk.z}
+    return {'data': chunk_data, 'x': chunk.x, 'z': chunk.z, 'length': length, 'compression': compression_type}
 
 
 def get_timestamp_data(header, chunk):
@@ -72,8 +87,6 @@ def get_timestamp_data(header, chunk):
 
 
 def get_location_data(header, chunk):
-    print(region_math)
-    print(chunk)
     int_offset = region_math.get_chunk_location(chunk.x, chunk.z)
     print('len {0} for {1},{2}, offset is {3}'.format(len(header),chunk.x,chunk.z,int_offset))
 
