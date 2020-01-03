@@ -16,7 +16,7 @@ import pprint
 from os import path
 from nbt_tools import __version__
 from nbt_tools.region import math
-from nbt_tools.nbt import main as nbt_main
+from nbt_tools.nbt import main as nbt
 from nbt_tools.mcfiles import main as maps
 from nbt_tools.region import main as region
 
@@ -154,9 +154,7 @@ def parse_region_file(args):
     nbt_data = region.load_region(src_path, debug)
 
     if debug:
-        pp = pprint.PrettyPrinter(indent=1)
-        pp.pprint(nbt_data)
-
+        nbt.pretty_print_nbt_data(nbt_data, 1)
 
 def parse_nbt_file(args):
     src_path = args.src_path
@@ -164,14 +162,15 @@ def parse_nbt_file(args):
 
     # nbt files that are not gzipped
     if args.unpacked_nbt:
-        nbt_data = nbt_main.read_nbt_file(src_path)
+        nbt_data = nbt.read_nbt_file(src_path)
     # gzipped nbt, need to unpack before reading 
     else:
-        nbt_data = nbt_main.unpack_nbt_data(src_path)
+        nbt_data = nbt.unpack_nbt_file(src_path)
 
     if args.loglevel == 'DEBUG':
-        pp = pprint.PrettyPrinter(indent=1)
-        pp.pprint(nbt_data)
+        #:pp = pprint.PrettyPrinter(indent=1)
+        #pp.pprint(nbt_data)
+        nbt.pretty_print_nbt_data(nbt_data, 1)
 
 
 def run():

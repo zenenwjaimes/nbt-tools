@@ -48,6 +48,24 @@ def unpack_nbt_file(filename: str, fn = gzip.open):
     return data
 
 
+def pretty_print_nbt_data(nbt_data, indent = 1):
+    if 'root' in nbt_data:
+        pretty_print_nbt_data(nbt_data['root'], indent + 1)
+    else:
+        if 'type' in nbt_data and nbt_data['type'] in [TAG.Byte_Array.value, TAG.Int_Array.value, TAG.Long_Array.value, TAG.Compound.value, TAG.Compound.List]:
+            for tag in nbt_data['value']:
+                if 'tags' not in nbt_data['value']:
+                    data = nbt_data['value'][tag]
+                else:
+                    data = nbt_data['value']['tags']
+
+                pretty_print_nbt_data(data, indent)
+        else:
+            name = nbt_data['tag_name'] if 'tag_name' in nbt_data else 'unknown'
+            print(name)
+            _type = nbt_data['type']
+            print('{} -> {} name={}'.format(indent * "\t", TAG(_type).name, name))
+
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
     return TAG(to_int(_tag_type))
@@ -97,7 +115,7 @@ def read_tag(buf, mutdata, typed = False):
     if data['name'] != 'end':
         mod = nbt_module(data['fn'])
         tag_reader = getattr(mod, 'read')
-        mutdata[data['name']] = dict({'type': tag.value, 'value': tag_reader(data, buf, mutdata)})
+        mutdata[data['name']] = dict({'tag_name': data['name'], 'tag': tag, 'type': tag.value, 'value': tag_reader(data, buf, mutdata)})
     if typed == False:
         read_tag(buf, mutdata, typed)
 

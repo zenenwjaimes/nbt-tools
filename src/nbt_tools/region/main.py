@@ -18,13 +18,6 @@ def load_region(filename, debug = False):
 
     data = parse_region_data(header_data, region_data)
 
-    #nbt_data = nbt.unpack_nbt_data(filename)
-
-    if debug:
-        pp = pprint.PrettyPrinter(indent=4)
-        pp.pprint(header)
-        print(data)
-
     return data
 
 

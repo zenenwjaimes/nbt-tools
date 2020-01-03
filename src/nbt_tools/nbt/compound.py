@@ -9,4 +9,3 @@ def read(info, buf, mutdata):
     nbt.read_tag(buf, newdata)
 
     return newdata
-

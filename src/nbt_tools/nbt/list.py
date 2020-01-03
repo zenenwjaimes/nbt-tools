@@ -18,4 +18,4 @@ def read(info, buf, mutdata):
         nbt.read_tag(buf, newdata, tagId if tagId != nbt.TAG.Compound.value else False)
         tags.append(newdata)
 
-    return tags
+    return dict({'tags': tags, 'type': tagId})
