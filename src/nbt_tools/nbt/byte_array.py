@@ -1,19 +1,18 @@
 from nbt_tools.nbt import main as nbt
+from nbt_tools.nbt import byte
 
 def byte_length() -> int:
     return 4
 
-def read(info, buf, mutdata):
+
+def read(buf):
     data = buf.read(byte_length())
     _size = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]
-    #fresh_bytes = buf.read(_size)
 
-    tags = []
+    values = []
+
     for i in range(_size):
-        newdata = dict()
-        nbt.read_tag(buf, newdata, nbt.TAG.Byte.value)
-        tags.append(newdata)
+        val = byte.read(buf)
+        values.append(val)
 
-    values = list(map(lambda tag: tag['']['value'], tags))
-
-    return dict({'size': _size, 'raw': values, 'value': _size, 'size_bytes': 1, 'tags': tags})
+    return dict({'size': _size, 'raw': values, 'value': _size, 'size_bytes': 1})

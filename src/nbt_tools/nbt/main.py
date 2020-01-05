@@ -2,6 +2,7 @@ import pprint
 import gzip
 import importlib
 import io
+import struct
 from enum import Enum
 from nbt_tools.nbt import * 
 
@@ -20,19 +21,34 @@ class TAG(Enum):
     Int_Array = 0xB
     Long_Array = 0xC
 
+def to_byte(byte):
+    #return int.from_bytes(byte, byteorder = 'big', signed = True)
+    return struct.unpack('>b', byte)[0]
+    
+
+def to_short(byte):
+    return struct.unpack('>h', byte)[0]
+
+
 def to_int(byte):
-    return int(byte.hex(), 16)
+    return struct.unpack('>i', byte)[0]
+
+
+def to_long(byte):
+    return struct.unpack('>q', byte)[0]
 
 
 def read_nbt_bytes(byte_data):
-    data = dict()
+    data = [] 
+
     with io.BytesIO(byte_data) as fp:
         read_tag(fp, data)
 
     return data
 
 def read_nbt_file(filename: str):
-    data = dict()
+    data = [] 
+
     with open(filename, 'rb') as fp:
         read_tag(fp, data)
 
@@ -40,7 +56,7 @@ def read_nbt_file(filename: str):
 
 
 def unpack_nbt_file(filename: str, fn = gzip.open):
-    data = dict()
+    data = [] 
 
     with fn(filename, 'rb') as fp:
         read_tag(fp, data)
@@ -66,19 +82,15 @@ def pretty_print_nbt_data(nbt_data, indent = 1):
             _type = nbt_data['type']
             print('{} -> {} name={}'.format(indent * "\t", TAG(_type).name, name))
 
+
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
-    return TAG(to_int(_tag_type))
+    return TAG(to_byte(_tag_type))
 
 
 def tag_name(buf) -> str:
-    length_big_byte = to_int(buf.read(1)) << 8
-
-    # eof
-    if length_big_byte == b'':
-        return 
-
-    length_small_byte = to_int(buf.read(1))
+    length_big_byte = to_byte(buf.read(1)) << 8
+    length_small_byte = to_byte(buf.read(1))
 
     length = length_big_byte | length_small_byte
     tag_name = buf.read(length) if length > 0 else b'root'
@@ -89,36 +101,35 @@ def tag_data(tag, buf, skip_read = False) -> dict:
     if tag == TAG.End:
         return dict({'name': 'end', 'tag': TAG.End, 'fn': 'end'})
 
-    name = ""
-        
-    if skip_read == False:
-        name = tag_name(buf) if tag.value != TAG.End.value else ''
-
+    name = tag_name(buf) if tag.value != TAG.End.value else ''
     fn = tag.name.lower()
    
     return dict({'name': name, 'tag': tag, 'fn': fn})
 
 
-def read_tag(buf, mutdata, typed = False):
-    if typed == False:
-        _type = buf.read(1)
-        tag = tag_type(_type) 
-    else:
-        tag = TAG(typed)
-
+def read_tag(buf, mutdata):
+    #print('FP is at {}'.format(buf.tell()))
+    _type = buf.read(1)
+    tag = tag_type(_type) 
+    
     # eof
     if tag == TAG.End: #and _type != b'\x00':
         return
 
-    data = tag_data(tag, buf, typed)
+    data = tag_data(tag, buf)
 
     if data['name'] != 'end':
-        mod = nbt_module(data['fn'])
-        tag_reader = getattr(mod, 'read')
-        mutdata[data['name']] = dict({'tag_name': data['name'], 'tag': tag, 'type': tag.value, 'value': tag_reader(data, buf, mutdata)})
-    if typed == False:
-        read_tag(buf, mutdata, typed)
+        tag_reader = get_tag_reader(tag)
+        val = tag_reader(buf)
+        mutdata.append({'tag_name': data['name'], 'tag': tag, 'type': tag.value, 'value': val})
+
+    read_tag(buf, mutdata)
 
 
-def nbt_module(fn):
+def get_tag_reader(tag):
+    mod = get_nbt_fn(tag.name.lower())
+    return getattr(mod, 'read')
+
+
+def get_nbt_fn(fn):
     return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))

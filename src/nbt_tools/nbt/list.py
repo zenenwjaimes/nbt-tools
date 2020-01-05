@@ -6,16 +6,27 @@ def byte_length() -> int:
 def byte_length_payload_size() -> int:
     return 4
 
-def read(info, buf, mutdata):
-    # list of type tagId (byte, int, long, string, etc)
-    tagId = nbt.to_int(buf.read(byte_length()))
-    listSize = buf.read(byte_length_payload_size())
-    payloadSize = (listSize[0] << 24) | (listSize[1] << 16) | (listSize[2] << 8) | listSize[3]
+def read(buf):
+    # list of type tag_id (byte, int, compound, string, etc)
+    #tag_id = nbt.to_byte(buf.read(byte_length()))
+    tag_type = nbt.tag_type(buf.read(byte_length()))
+    list_size = buf.read(byte_length_payload_size())
+    payload_size = nbt.to_int(list_size) 
     tags = []
+    #print('payload size: {}'.format(payload_size))
 
-    for i in range(payloadSize):
-        newdata = dict()
-        nbt.read_tag(buf, newdata, tagId if tagId != nbt.TAG.Compound.value else False)
-        tags.append(newdata)
+    if tag_type.value == nbt.TAG.Compound.value:
+        #print('list of compounds')
 
-    return dict({'tags': tags, 'type': tagId})
+        for i in range(payload_size):
+            newdata = []
+            nbt.read_tag(buf, newdata)
+            tags.append(newdata)
+    else:
+        for i in range(payload_size):
+            tag_reader = nbt.get_tag_reader(tag_type)
+            val = tag_reader(buf)
+
+            tags.append(val)
+
+    return dict({'tags': tags, 'type': tag_type.value})

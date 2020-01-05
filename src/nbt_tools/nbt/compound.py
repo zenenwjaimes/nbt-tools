@@ -4,8 +4,8 @@ import pprint
 def byte_length() -> int:
     return -1
 
-def read(info, buf, mutdata):
-    newdata = dict()
+def read(buf):
+    newdata = []
     nbt.read_tag(buf, newdata)
 
     return newdata

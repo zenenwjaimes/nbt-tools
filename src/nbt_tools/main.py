@@ -148,7 +148,7 @@ def chunk_relocate(args):
 
 def parse_region_file(args):
     src_path = args.src_path
-    nbt_data = {}
+    nbt_data = []
 
     debug = True if args.loglevel == 'DEBUG' else False
     nbt_data = region.load_region(src_path, debug)
@@ -158,7 +158,7 @@ def parse_region_file(args):
 
 def parse_nbt_file(args):
     src_path = args.src_path
-    nbt_data = {}
+    nbt_data = []
 
     # nbt files that are not gzipped
     if args.unpacked_nbt:

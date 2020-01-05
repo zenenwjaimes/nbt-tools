@@ -1,0 +1,182 @@
+import pprint
+import gzip
+import importlib
+import io
+import array
+from enum import Enum
+from nbt_tools.nbt import * 
+
+class TAG(Enum):
+    End = 0x0
+    Byte = 0x1
+    Short = 0x2
+    Int = 0x3
+    Long = 0x4
+    Float = 0x5
+    Double = 0x6
+    Byte_Array = 0x7
+    String = 0x8
+    List = 0x9
+    Compound = 0xA
+    Int_Array = 0xB
+    Long_Array = 0xC
+
+def byte_to_int(byte):
+    assert type(byte) in [bytes, bytearray, array.array], "Invalid byte"
+
+    return int.from_bytes(byte, byteorder='big')
+
+
+def read_nbt_bytes(byte_data):
+    data = []
+    read_tag(byte_data, data)
+
+    return data
+
+
+def read_nbt_file(filename: str):
+    with open(filename, 'rb') as fp:
+        data = fp.read()
+        fp.close()
+
+        return data 
+
+
+def unpack_nbt_file(filename: str, fn = gzip.open):
+    with fn(filename, 'rb') as fp:
+        data = fp.read()
+        fp.close()
+
+        return data 
+
+
+def byte_slice(data, offset, length = 0):
+    if length == 0:
+        return data[offset:]
+    else:
+        temp = data[offset:]
+
+        return temp[0:length]
+
+
+def pretty_print_nbt_data(nbt_data, indent = 1):
+    _type = nbt_data if 'type' not in nbt_data else 'WTF'
+    name = nbt_data['tag_name'] if 'tag_name' in nbt_data else 'unknown'
+    print('{} -> {} name={}'.format(indent * "\t", _type, name))
+
+    if 'root' in nbt_data:
+        pretty_print_nbt_data(nbt_data['root'], indent + 1)
+    else:
+        # complex
+        if 'type' in nbt_data and nbt_data['type'] in [TAG.Byte_Array.value, TAG.Int_Array.value, TAG.Long_Array.value, TAG.Compound.value, TAG.Compound.value]:
+            for tag in nbt_data['value']:
+                if 'tags' not in nbt_data['value']:
+                    print('tags not in nbt data')
+                    data = nbt_data['value'][tag]
+                else:
+                    print('tags exist wtf')
+                    data = nbt_data['value']['tags']
+
+                pretty_print_nbt_data(data, indent)
+
+
+def tag_type(_type) -> str:
+    _tag_type = _type if _type != b'' else b'\x00'
+    return TAG(byte_to_int(_tag_type))
+
+
+def tag_name(data) -> str:
+    length_big_byte = byte_to_int(byte_slice(data, 0, 1))
+
+    # eof
+    if length_big_byte == b'':
+        print('EOF')
+        return 
+
+    length_small_byte = byte_to_int(byte_slice(data, 1, 1))
+
+    length = length_big_byte | length_small_byte
+    tag_name = byte_slice(data, 2, length) if length > 0 else b'root'
+
+    return tag_name.decode("utf-8")
+
+def tag_data(tag, data):
+    if tag == TAG.End:
+        return { 'name': 'end', 'tag': TAG.End, 'fn': 'end' }
+
+    name = tag_name(data) if tag.value != TAG.End.value else ''
+    fn = tag.name.lower()
+   
+    return { 'name': name, 'tag': tag, 'fn': fn, 'len': len(name) if name != 'root' else 0 }
+
+
+def read_tag(data, prev_pos = 0):
+    print('PREV {}'.format(prev_pos))
+    tag = tag_type(byte_slice(data, prev_pos, 1)) 
+
+    # eof
+    if tag == TAG.End: #and _type != b'\x00':
+        print('EOF or END TAG')
+        return None
+
+    tag = tag_data(tag, data[prev_pos + 1:])
+    offset = tag['len'] + 2
+    print(tag)
+    mod = nbt_module(tag['fn'])
+    tag_reader = getattr(mod, 'read')
+    print('offset before reading tag: {}'.format(offset + prev_pos))
+    val = tag_reader(data, offset + prev_pos + 1)
+    vals = []
+
+    #offset += len_add(val['value'])
+    #print(val)
+
+    print('offset {} with name {} for type {}'.format(offset + prev_pos, tag['name'], tag))
+
+    if tag['tag'].value == TAG.Compound.value:
+        has_next = True
+        last_offset = prev_pos + offset
+        print('compound offset: {}'.format(last_offset))
+
+        while has_next:
+            print('next tag?')
+            t = read_tag(data, last_offset)
+            print('herm')
+            print(t)
+            has_next = True if t is not None else False
+            
+            if has_next:
+                #print('type == {}'.format(type(t['value'])))
+                last_offset += len_add(t['value'])
+                last_offset += t['tag']['len'] + 3
+                print('LAST_OFFSET: {}'.format(last_offset))
+
+            vals.append(t)
+
+    res = {
+        'tag_name': tag['name'],
+        'tag': tag,
+        'type': tag['tag'].value,
+        'value': vals if tag['tag'].value == TAG.Compound.value else val
+    }
+
+    print(res)
+
+    return res
+
+def len_add(vals):
+    sum = 0
+
+    if type(vals) is list:
+        print(vals)
+        for i in vals:
+            if i is not None:
+                sum += len_add(i['value'])
+    else:
+        sum += vals['len']
+
+    return sum
+
+
+def nbt_module(fn):
+    return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))
