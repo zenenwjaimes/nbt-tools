@@ -1,7 +1,9 @@
-from nbt_tools.nbt import main as nbt
+from nbt_tools.nbt import int as intb
+
 
 def byte_length() -> int:
     return 4
+
 
 def read(buf):
     data = buf.read(byte_length())
@@ -10,7 +12,7 @@ def read(buf):
     values = []
 
     for i in range(_size):
-        val = byte.read(buf)
+        val = intb.read(buf)
         values.append(val)
 
     return {'size': _size, 'raw': values, 'value': _size, 'size_bytes': 4}

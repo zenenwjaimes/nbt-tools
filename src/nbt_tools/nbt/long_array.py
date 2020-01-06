@@ -1,5 +1,5 @@
-from nbt_tools.nbt import main as nbt
 from nbt_tools.nbt import long
+
 
 def byte_length() -> int:
     return 4
@@ -8,7 +8,6 @@ def byte_length() -> int:
 def read(buf):
     data = buf.read(byte_length())
     _size = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]
-    #print('long array of size: {}'.format(_size))
     values = []
 
     for i in range(_size):

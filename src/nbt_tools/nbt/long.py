@@ -1,5 +1,6 @@
 from nbt_tools.nbt import main as nbt
 
+
 def byte_length() -> int:
     return 8
 
@@ -7,4 +8,4 @@ def byte_length() -> int:
 def read(buf):
     data = buf.read(byte_length())
 
-    return nb.to_long(data)
+    return nbt.to_long(data)

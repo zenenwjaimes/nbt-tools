@@ -1,5 +1,5 @@
-from nbt_tools.nbt import main as nbt
 from nbt_tools.nbt import byte
+
 
 def byte_length() -> int:
     return 4

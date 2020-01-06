@@ -1,10 +1,9 @@
-import pprint
 import gzip
 import importlib
 import io
 import struct
 from enum import Enum
-from nbt_tools.nbt import * 
+
 
 class TAG(Enum):
     End = 0x0
@@ -21,9 +20,10 @@ class TAG(Enum):
     Int_Array = 0xB
     Long_Array = 0xC
 
+
 def to_byte(byte):
     return struct.unpack('>b', byte)[0]
-    
+
 
 def to_short(byte):
     return struct.unpack('>h', byte)[0]
@@ -38,15 +38,16 @@ def to_long(byte):
 
 
 def read_nbt_bytes(byte_data):
-    data = [] 
+    data = []
 
     with io.BytesIO(byte_data) as fp:
         read_tag(fp, data)
 
     return data
 
+
 def read_nbt_file(filename: str):
-    data = [] 
+    data = []
 
     with open(filename, 'rb') as fp:
         read_tag(fp, data)
@@ -54,8 +55,8 @@ def read_nbt_file(filename: str):
     return data
 
 
-def unpack_nbt_file(filename: str, fn = gzip.open):
-    data = [] 
+def unpack_nbt_file(filename: str, fn=gzip.open):
+    data = []
 
     with fn(filename, 'rb') as fp:
         read_tag(fp, data)
@@ -63,25 +64,49 @@ def unpack_nbt_file(filename: str, fn = gzip.open):
     return data
 
 
-def pretty_print_nbt_data(nbt_data, indent = 0):
+def pretty_print_nbt_data(nbt_data, indent=0):
     if type(nbt_data) is list:
         for tag in nbt_data:
-            if 'type' in tag and tag['type'] in [TAG.Byte_Array.value, TAG.Int_Array.value, TAG.Long_Array.value, TAG.Compound.value, TAG.Compound.List]:
-                name = tag['tag_name'] if 'tag_name' in tag else 'unknown'
-                _type = tag['type']
-                print('{} -> {} name={}'.format(indent * "\t", tag['tag'].name, name))
+            complex_types = [
+                    TAG.Byte_Array.value,
+                    TAG.Int_Array.value,
+                    TAG.Long_Array.value,
+                    TAG.Compound.value,
+                    TAG.Compound.List
+            ]
 
-                pretty_print_nbt_data(tag['value'], indent + 1);
+            if 'type' in tag and tag['type'] in complex_types:
+                name = tag['tag_name'] if 'tag_name' in tag else 'unknown'
+
+                print('{} -> {} name={}'.format(
+                        indent * "\t",
+                        tag['tag'].name,
+                        name
+                    )
+                )
+
+                pretty_print_nbt_data(tag['value'], indent + 1)
             else:
                 try:
                     name = tag['tag_name'] if 'tag_name' in tag else 'unknown'
-                    _type = tag['type']
 
-                    print('{} -> {} name={}, value={}'.format(indent * "\t", tag['tag'].name, name, tag['value']))
+                    print('{} -> {} name={}, value={}'.format(
+                            indent * "\t",
+                            tag['tag'].name,
+                            name,
+                            tag['value']
+                        )
+                    )
                 except TypeError:
                     print('ERROR')
     else:
-        print('{} -> {} -> {}'.format(indent * "\t", nbt_data['value'], nbt_data['raw']))
+        print('{} -> {} -> {}'.format(
+                indent * "\t",
+                nbt_data['value'],
+                nbt_data['raw']
+            )
+        )
+
 
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
@@ -97,22 +122,23 @@ def tag_name(buf) -> str:
 
     return tag_name.decode("utf-8")
 
-def tag_data(tag, buf, skip_read = False):
+
+def tag_data(tag, buf, skip_read=False):
     if tag == TAG.End:
         return {'name': 'end', 'tag': TAG.End, 'fn': 'end'}
 
     name = tag_name(buf) if tag.value != TAG.End.value else ''
     fn = tag.name.lower()
-   
+
     return {'name': name, 'tag': tag, 'fn': fn}
 
 
 def read_tag(buf, mutdata):
     _type = buf.read(1)
-    tag = tag_type(_type) 
-    
+    tag = tag_type(_type)
+
     # eof
-    if tag == TAG.End: #and _type != b'\x00':
+    if tag == TAG.End:
         return
 
     data = tag_data(tag, buf)
@@ -120,7 +146,12 @@ def read_tag(buf, mutdata):
     if data['name'] != 'end':
         tag_reader = get_tag_reader(tag)
         val = tag_reader(buf)
-        mutdata.append({'tag_name': data['name'], 'tag': tag, 'type': tag.value, 'value': val})
+        mutdata.append({
+            'tag_name': data['name'],
+            'tag': tag,
+            'type': tag.value,
+            'value': val
+        })
 
     read_tag(buf, mutdata)
 
