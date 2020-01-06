@@ -2,9 +2,7 @@ import gzip
 import importlib
 import io
 import struct
-import traceback
 from enum import Enum
-import pprint
 
 
 class TAG(Enum):
@@ -75,6 +73,7 @@ def pretty_print(indent, tag, name, val={}):
         )
     )
 
+
 def pretty_print_nbt_data(nbt_data, indent=0):
     if type(nbt_data) is list:
         for tag in nbt_data:
@@ -84,22 +83,38 @@ def pretty_print_nbt_data(nbt_data, indent=0):
                 pretty_print_nbt_data(tag, indent + 1)
             elif type(tag) is dict:
                 val = tag['value']
-                
+
                 if type(val) is list:
-                    print('{} -> {} -> name={}'.format('\t' * indent, tag['tag'].name, tag['tag_name']))
+                    print('{} -> {} -> name={}'.format(
+                        '\t' * indent,
+                        tag['tag'].name,
+                        tag['tag_name']
+                    ))
                     pretty_print_nbt_data(val, indent + 1)
                 else:
                     if type(tag['value']) is dict:
-                        print('{} -> {} -> name={}'.format('\t' * indent, tag['tag'].name, tag['tag_name']))
-                        #pprint.pprint(tag['value']['value'])
+                        print('{} -> {} -> name={}'.format(
+                            '\t' * indent,
+                            tag['tag'].name,
+                            tag['tag_name']
+                        ))
+
                         if type(tag['value']) is list:
                             pretty_print_nbt_data([tag['value']], indent + 1)
                         else:
                             pretty_print_nbt_data(tag, indent + 1)
-                    else: 
-                        print('{} -> {} -> name={} value={}'.format('\t' * indent, tag['tag'].name, tag['tag_name'], tag['value']))
+                    else:
+                        print('{} -> {} -> name={} value={}'.format(
+                            '\t' * indent,
+                            tag['tag'].name,
+                            tag['tag_name'],
+                            tag['value']
+                        ))
+            else:
+                print('{} -> {}'.format('\t' * indent, tag))
     else:
         pretty_print_nbt_data(nbt_data['value'], indent + 1)
+
 
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
@@ -156,6 +171,7 @@ def get_tag_reader(tag):
 
 def get_nbt_fn(fn):
     return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))
+
 
 def get_tag_node(path, nbt_data):
     curr_path = path[0:1]
