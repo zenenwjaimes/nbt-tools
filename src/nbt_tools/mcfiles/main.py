@@ -3,10 +3,12 @@ from PIL import Image, ImageDraw
 import pprint
 from nbt_tools.mcfiles import map_colors
 
-def generate_image(filename, output_dir, output_name, debug = False):
+
+def generate_image(filename, output_dir, output_name, debug=False):
     nbt_data = nbt.unpack_nbt_data(filename)
     root = nbt_data['root']['value']
     map_data = root['data']['value']
+
     if debug:
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(root)
@@ -25,12 +27,12 @@ def generate_image(filename, output_dir, output_name, debug = False):
     for x in range(0, width):
         for y in range(0, height):
             color_id = raw_data[x + y * width]
-            
+
             try:
                 color_rgba = tuple(colors[color_id][0:3])
-                draw.point((x,y), fill=color_rgba)
+                draw.point((x, y), fill=color_rgba)
             except IndexError as e:
-                #print('out of bounds ({0}, {1}) for position {2} value is "{3}"'.format(x, y, (x + y * 128), color_id))
+                print(e)
                 continue
 
     im.save('{0}/{1}.png'.format(output_dir, output_name))

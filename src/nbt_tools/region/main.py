@@ -1,15 +1,13 @@
 from nbt_tools.nbt import main as nbt
 from nbt_tools.region import math as region_math
 import collections
-import pprint
 import zlib
 
 Point = collections.namedtuple('Point', 'x y')
 Chunk = collections.namedtuple('Chunk', 'x z')
 
-def load_region(filename, debug = False):
-    header = {}
-    chunks = {}
+
+def load_region(filename, debug=False):
     data = {}
 
     with open(filename, 'rb') as fp:
@@ -25,9 +23,12 @@ def parse_region_data(header, region_data):
     chunks = {}
     locations = []
     timestamps = []
-    
-    location_tuples = [Chunk(x, z) for x in range(16)
-                             for z in range(16)]
+
+    location_tuples = [
+            Chunk(x, z)
+            for x in range(16)
+            for z in range(16)
+    ]
 
     temp_header = bytes(header[0:4096])
     temp_chunk_data = bytes(region_data)
@@ -40,15 +41,18 @@ def parse_region_data(header, region_data):
 
         locations.append(chunk_loc_data)
         timestamps.append(chunk_ts_data)
-        chunks[chunk] = get_chunk_data(temp_chunk_data, chunk, {'loc': chunk_loc_data, 'ts': chunk_ts_data})
+        chunks[chunk] = get_chunk_data(
+                temp_chunk_data,
+                chunk,
+                {'loc': chunk_loc_data, 'ts': chunk_ts_data}
+        )
 
     return {'locations': locations, 'timestamps': timestamps, 'chunks': chunks}
 
 
 def get_chunk_data(region_data, chunk, info):
-    int_offset = info['loc']['offset'] 
-    # max chunk size 1MB, each sector being 4KB, max sectors is 256  
-    sector_offset = info['loc']['sectors'] * 4096 
+    # max chunk size 1MB, each sector being 4KB, max sectors is 256
+    sector_offset = info['loc']['sectors'] * 4096
 
     b0 = region_data[sector_offset+0]
     b1 = region_data[sector_offset+1]
@@ -62,7 +66,14 @@ def get_chunk_data(region_data, chunk, info):
 
     chunky = nbt.read_nbt_bytes(chunk_data)
 
-    return {'data': chunk_data, 'chunk': chunky, 'x': chunk.x, 'z': chunk.z, 'length': length, 'compression': compression_type}
+    return {
+            'data': chunk_data,
+            'chunk': chunky,
+            'x': chunk.x,
+            'z': chunk.z,
+            'length': length,
+            'compression': compression_type
+    }
 
 
 def get_timestamp_data(header, chunk):
@@ -91,4 +102,9 @@ def get_location_data(header, chunk):
     location_offset = _int
     sector_count = b3
 
-    return {'offset': location_offset, 'sectors': sector_count, 'x': chunk.x, 'z': chunk.z}
+    return {
+            'offset': location_offset,
+            'sectors': sector_count,
+            'x': chunk.x,
+            'z': chunk.z
+    }

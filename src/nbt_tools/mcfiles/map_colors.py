@@ -1,5 +1,6 @@
 import json
 
+
 def get_color_data():
     color_json = """
 [
@@ -528,6 +529,7 @@ def get_color_data():
 
     return json.loads(color_json)
 
+
 def get_expanded_color(base_color, colorId):
     mults = {0: 180, 1: 220, 2: 255, 3: 135}
     mult = mults[colorId]
@@ -535,12 +537,15 @@ def get_expanded_color(base_color, colorId):
 
     return list(map(lambda c: int(c * mult/255), color))
 
+
 def get_all_colors(color_data):
     all_colors = []
 
     for base_color in color_data:
-        all_colors.extend([get_expanded_color(base_color, 0),
-                            get_expanded_color(base_color, 1),
-                            get_expanded_color(base_color, 2),
-                            get_expanded_color(base_color, 3)])
+        all_colors.extend([
+            get_expanded_color(base_color, 0),
+            get_expanded_color(base_color, 1),
+            get_expanded_color(base_color, 2),
+            get_expanded_color(base_color, 3)
+        ])
     return all_colors
