@@ -22,7 +22,6 @@ class TAG(Enum):
     Long_Array = 0xC
 
 def to_byte(byte):
-    #return int.from_bytes(byte, byteorder = 'big', signed = True)
     return struct.unpack('>b', byte)[0]
     
 
@@ -64,24 +63,25 @@ def unpack_nbt_file(filename: str, fn = gzip.open):
     return data
 
 
-def pretty_print_nbt_data(nbt_data, indent = 1):
-    if 'root' in nbt_data:
-        pretty_print_nbt_data(nbt_data['root'], indent + 1)
+def pretty_print_nbt_data(nbt_data, indent = 0):
+    if type(nbt_data) is list:
+        for tag in nbt_data:
+            if 'type' in tag and tag['type'] in [TAG.Byte_Array.value, TAG.Int_Array.value, TAG.Long_Array.value, TAG.Compound.value, TAG.Compound.List]:
+                name = tag['tag_name'] if 'tag_name' in tag else 'unknown'
+                _type = tag['type']
+                print('{} -> {} name={}'.format(indent * "\t", tag['tag'].name, name))
+
+                pretty_print_nbt_data(tag['value'], indent + 1);
+            else:
+                try:
+                    name = tag['tag_name'] if 'tag_name' in tag else 'unknown'
+                    _type = tag['type']
+
+                    print('{} -> {} name={}, value={}'.format(indent * "\t", tag['tag'].name, name, tag['value']))
+                except TypeError:
+                    print('ERROR')
     else:
-        if 'type' in nbt_data and nbt_data['type'] in [TAG.Byte_Array.value, TAG.Int_Array.value, TAG.Long_Array.value, TAG.Compound.value, TAG.Compound.List]:
-            for tag in nbt_data['value']:
-                if 'tags' not in nbt_data['value']:
-                    data = nbt_data['value'][tag]
-                else:
-                    data = nbt_data['value']['tags']
-
-                pretty_print_nbt_data(data, indent)
-        else:
-            name = nbt_data['tag_name'] if 'tag_name' in nbt_data else 'unknown'
-            print(name)
-            _type = nbt_data['type']
-            print('{} -> {} name={}'.format(indent * "\t", TAG(_type).name, name))
-
+        print('{} -> {} -> {}'.format(indent * "\t", nbt_data['value'], nbt_data['raw']))
 
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
@@ -97,18 +97,17 @@ def tag_name(buf) -> str:
 
     return tag_name.decode("utf-8")
 
-def tag_data(tag, buf, skip_read = False) -> dict:
+def tag_data(tag, buf, skip_read = False):
     if tag == TAG.End:
-        return dict({'name': 'end', 'tag': TAG.End, 'fn': 'end'})
+        return {'name': 'end', 'tag': TAG.End, 'fn': 'end'}
 
     name = tag_name(buf) if tag.value != TAG.End.value else ''
     fn = tag.name.lower()
    
-    return dict({'name': name, 'tag': tag, 'fn': fn})
+    return {'name': name, 'tag': tag, 'fn': fn}
 
 
 def read_tag(buf, mutdata):
-    #print('FP is at {}'.format(buf.tell()))
     _type = buf.read(1)
     tag = tag_type(_type) 
     

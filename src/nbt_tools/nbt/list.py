@@ -29,4 +29,4 @@ def read(buf):
 
             tags.append(val)
 
-    return dict({'tags': tags, 'type': tag_type.value})
+    return {'tags': tags, 'type': tag_type.value}

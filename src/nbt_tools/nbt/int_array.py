@@ -7,12 +7,10 @@ def read(buf):
     data = buf.read(byte_length())
     _size = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]
 
-    tags = []
+    values = []
+
     for i in range(_size):
-        newdata = []
-        nbt.read_tag(buf, newdata, nbt.TAG.Int.value)
-        tags.append(newdata)
+        val = byte.read(buf)
+        values.append(val)
 
-    values = list(map(lambda tag: tag['']['value'], tags))
-
-    return dict({'size': _size, 'raw': values, 'value': _size, 'size_bytes': 4, 'tags': tags})
+    return {'size': _size, 'raw': values, 'value': _size, 'size_bytes': 4}
