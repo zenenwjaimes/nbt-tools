@@ -15,4 +15,4 @@ def read(buf):
         val = intb.read(buf)
         values.append(val)
 
-    return {'size': _size, 'raw': values, 'value': _size, 'size_bytes': 4}
+    return {'size': _size, 'value': values, 'size_bytes': 4}

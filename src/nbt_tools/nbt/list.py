@@ -25,7 +25,6 @@ def read(buf):
         for i in range(payload_size):
             tag_reader = nbt.get_tag_reader(tag_type)
             val = tag_reader(buf)
-
             tags.append(val)
 
-    return {'tags': tags, 'type': tag_type.value}
+    return {'value': tags, 'type': tag_type.value}

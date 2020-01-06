@@ -14,4 +14,4 @@ def read(buf):
         val = long.read(buf)
         values.append(val)
 
-    return {'size': _size, 'raw': values, 'value': _size, 'size_bytes': 8}
+    return {'size': _size, 'value': values, 'size_bytes': 8}
