@@ -15,12 +15,11 @@ def load_region(filename, debug=False):
         region_data = fp.read()
 
     data = parse_region_data(header_data, region_data)
-
     return data
 
 
 def parse_region_data(header, region_data):
-    chunks = {}
+    chunks = []
     locations = []
     timestamps = []
 
@@ -41,11 +40,11 @@ def parse_region_data(header, region_data):
 
         locations.append(chunk_loc_data)
         timestamps.append(chunk_ts_data)
-        chunks[chunk] = get_chunk_data(
-                temp_chunk_data,
-                chunk,
-                {'loc': chunk_loc_data, 'ts': chunk_ts_data}
-        )
+        chunks.append(get_chunk_data(
+            temp_chunk_data,
+            chunk,
+            {'loc': chunk_loc_data, 'ts': chunk_ts_data}
+        ))
 
     return {'locations': locations, 'timestamps': timestamps, 'chunks': chunks}
 

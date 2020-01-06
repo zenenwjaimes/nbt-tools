@@ -212,7 +212,9 @@ def parse_region_file(args):
     nbt_data = region.load_region(src_path, debug)
 
     if debug:
-        nbt.pretty_print_nbt_data(nbt_data, 1)
+        pass
+        #for chunk_data in nbt_data['chunks']:
+        #    nbt.pretty_print_nbt_data(chunk_data['chunk'])
 
 
 def parse_nbt_file(args):
