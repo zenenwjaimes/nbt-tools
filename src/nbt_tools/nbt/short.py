@@ -5,6 +5,5 @@ def byte_length() -> int:
 
 def read(buf):
     data = buf.read(byte_length())
-    _short = (data[0] << 8) | data[1]
 
-    return _short
+    return nbt.to_short(data)
