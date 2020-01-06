@@ -5,16 +5,24 @@ from nbt_tools.mcfiles import map_colors
 
 
 def generate_image(filename, output_dir, output_name, debug=False):
-    nbt_data = nbt.unpack_nbt_data(filename)
-    root = nbt_data['root']['value']
-    map_data = root['data']['value']
+    nbt_data = nbt.unpack_nbt_file(filename)
+    #root = nbt_data[0]
+    #data = root['value'][0]
+    #map_data = data['value'][3]['value']
+
+    map_data = nbt.get_tag_node(['root', 'data', 'colors'], nbt_data)
+
+    if map_data is False or map_data is None:
+        print('Map generation failed')
+
+        return
 
     if debug:
         pp = pprint.PrettyPrinter(indent=4)
         pp.pprint(root)
         print(filename)
 
-    raw_data = map_data['colors']['value']['raw']
+    raw_data = map_data['value']['raw']
 
     # TODO: find out if there's a different width/height
     # if there is, how to get these values

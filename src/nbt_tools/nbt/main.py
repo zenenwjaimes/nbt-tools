@@ -163,3 +163,15 @@ def get_tag_reader(tag):
 
 def get_nbt_fn(fn):
     return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))
+
+def get_tag_node(path, nbt_data):
+    curr_path = path[0:1]
+
+    if type(nbt_data) is list:
+        for tag in nbt_data:
+            if curr_path[0] == tag['tag_name']:
+                if (len(path) > 1):
+                    return get_tag_node(path[1:], tag['value'])
+                else:
+                    return tag
+        return False
