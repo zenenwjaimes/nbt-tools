@@ -141,7 +141,7 @@ def tag_data(tag, buf, skip_read=False):
     return {'name': name, 'tag': tag, 'fn': fn}
 
 
-def read_tag(buf, mutdata):
+def read_tag(buf, mutdata, only_once=False):
     _type = buf.read(1)
     tag = tag_type(_type)
 
@@ -154,6 +154,7 @@ def read_tag(buf, mutdata):
     if data['name'] != 'end':
         tag_reader = get_tag_reader(tag)
         val = tag_reader(buf)
+
         mutdata.append({
             'tag_name': data['name'],
             'tag': tag,
@@ -161,7 +162,8 @@ def read_tag(buf, mutdata):
             'value': val
         })
 
-    read_tag(buf, mutdata)
+    if only_once is False:
+        read_tag(buf, mutdata)
 
 
 def get_tag_reader(tag):
