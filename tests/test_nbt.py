@@ -87,3 +87,13 @@ def test_tag_data_to_bytes():
     raw_bytes = bytes.fromhex('01 00 11 75 6E 6C 69 6D 69 74 65 64 54 72 61 63 6B 69 6E 67 00')
 
     assert nbt_data == raw_bytes, "data is not equal"
+
+def test_tag_data_to_int():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio) 
+    data = {'tag_name': 'zCenter', 'value': -3200, 'type': 3}
+
+    nbt_data = nbt.write_tag(buf, data)
+    raw_bytes = bytes.fromhex('03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80')
+
+    assert nbt_data == raw_bytes, "data is not equal"

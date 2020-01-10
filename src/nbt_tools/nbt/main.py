@@ -167,19 +167,12 @@ def read_tag(buf, mutdata, only_once=False):
 
 
 def write_tag(buf, data):
-    print('printo {}'.format(data))
     _type = data['type']
-    print('typo is {}'.format(data['type']))
     tag = tag_type(_type)
-    print(tag)
 
     tag_writer = get_tag_writer(tag)
     res = tag_writer(data)
-    print(res)
-
     buf.write(res)
-
-    print('write ret: {}'.format(res))
 
     return res
 
