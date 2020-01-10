@@ -6,8 +6,8 @@ def coord_to_region(x, z):
     assert z > -30000000 and z < 30000000, "Invalid z coord"
 
     # add -1 to account for negative numbers
-    return (math.floor(int(x / 512)),
-            math.floor(int(z / 512)))
+    return (int(math.floor(x / 512)),
+            int(math.floor(z / 512)))
 
 
 def region_to_coord(x, z):

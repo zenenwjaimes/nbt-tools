@@ -11,6 +11,8 @@ def generate_image(filename, output_dir, output_name, debug=False):
     #map_data = data['value'][3]['value']
 
     map_data = nbt.get_tag_node(['root', 'data', 'colors'], nbt_data)
+    raw_width = nbt.get_tag_node(['root', 'data', 'width'], nbt_data)
+    raw_height = nbt.get_tag_node(['root', 'data', 'height'], nbt_data)
 
     if map_data is False or map_data is None:
         print('Map generation failed')
@@ -22,11 +24,9 @@ def generate_image(filename, output_dir, output_name, debug=False):
         pp.pprint(root)
         print(filename)
 
-    raw_data = map_data['value']['raw']
-
-    # TODO: find out if there's a different width/height
-    # if there is, how to get these values
-    width = height = 128
+    raw_data = map_data['value']['value']
+    width = raw_width['value'] if raw_width != False else 128 
+    height = raw_height['value'] if raw_height != False else 128 
 
     im = Image.new('RGBA', (width, height), 'white')
     draw = ImageDraw.Draw(im)
@@ -46,5 +46,5 @@ def generate_image(filename, output_dir, output_name, debug=False):
     im.save('{0}/{1}.png'.format(output_dir, output_name))
 
     # generate upscaled image
-    large_im = im.resize((1024, 1024))
+    large_im = im.resize((width * 4, height * 4))
     large_im.save('{0}/{1}_large.png'.format(output_dir, output_name))
