@@ -118,7 +118,7 @@ def pretty_print_nbt_data(nbt_data, indent=0):
 
 def tag_type(_type) -> str:
     _tag_type = _type if _type != b'' else b'\x00'
-    return TAG(to_byte(_tag_type))
+    return TAG(to_byte(_tag_type) if type(_tag_type) is bytes else _tag_type)
 
 
 def tag_name(buf) -> str:
@@ -166,9 +166,39 @@ def read_tag(buf, mutdata, only_once=False):
         read_tag(buf, mutdata)
 
 
+def write_tag(buf, data):
+    print('printo {}'.format(data))
+    _type = data['type']
+    print('typo is {}'.format(data['type']))
+    tag = tag_type(_type)
+    print(tag)
+
+    tag_writer = get_tag_writer(tag)
+    res = tag_writer(data)
+    print(res)
+
+    buf.write(res)
+
+    print('write ret: {}'.format(res))
+
+    return res
+
+
+def get_tag_header(data):
+    return b''.join([
+        int(data['type']).to_bytes(1, byteorder='big'),
+        int(len(data['tag_name'])).to_bytes(2, byteorder='big')
+    ])
+
+
 def get_tag_reader(tag):
     mod = get_nbt_fn(tag.name.lower())
     return getattr(mod, 'read')
+
+
+def get_tag_writer(tag):
+    mod = get_nbt_fn(tag.name.lower())
+    return getattr(mod, 'write')
 
 
 def get_nbt_fn(fn):

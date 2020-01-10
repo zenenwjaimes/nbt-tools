@@ -77,25 +77,13 @@ def test_nbt_root_tag(datadir):
     assert nbt_data[0]['tag_name'] == "root", \
             "compound tag name to start file isn't 'root'"
 
-#def test_nbt_compound():
-#
-#    assert compound.read(x, z) == (-512, -512)
 
-#def test_region_min_max_bounds():
-#    min_x = -1210
-#    min_z = -1357
-#    max_x = 6206
-#    max_z = 6281
-#
-#    min_bound = math.coord_to_region(min_x, min_z)
-#    max_bound = math.coord_to_region(max_x, max_z)
-#
-#    region_ranges = math.regions_for_range(
-#                        min_bound[0],
-#                        min_bound[1],
-#                        max_bound[0],
-#                        max_bound[1]
-#    )
-#
-#    assert [-3, -3] in region_ranges, "lower region bound does not exist" 
-#    assert [12, 12] in region_ranges, "max region bound does not exist" 
+def test_tag_data_to_bytes():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio) 
+    data = {'tag_name': 'unlimitedTracking', 'value': 0, 'type': 1}
+
+    nbt_data = nbt.write_tag(buf, data)
+    raw_bytes = bytes.fromhex('01 00 11 75 6E 6C 69 6D 69 74 65 64 54 72 61 63 6B 69 6E 67 00')
+
+    assert nbt_data == raw_bytes, "data is not equal"
