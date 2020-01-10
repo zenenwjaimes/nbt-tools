@@ -4,6 +4,15 @@ import io
 import struct
 from enum import Enum
 
+"""
+TAG Format
+
+0: TAG id
+1-2: Tag Name Length
+3-x: Tag Name
+x-: Tag Data 
+
+"""
 
 class TAG(Enum):
     End = 0x0
@@ -167,19 +176,12 @@ def read_tag(buf, mutdata, only_once=False):
 
 
 def write_tag(buf, data):
-    print('printo {}'.format(data))
     _type = data['type']
-    print('typo is {}'.format(data['type']))
     tag = tag_type(_type)
-    print(tag)
 
     tag_writer = get_tag_writer(tag)
     res = tag_writer(data)
-    print(res)
-
     buf.write(res)
-
-    print('write ret: {}'.format(res))
 
     return res
 
