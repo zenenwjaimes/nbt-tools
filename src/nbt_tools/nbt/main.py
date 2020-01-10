@@ -4,6 +4,15 @@ import io
 import struct
 from enum import Enum
 
+"""
+TAG Format
+
+0: TAG id
+1-2: Tag Name Length
+3-x: Tag Name
+x-: Tag Data 
+
+"""
 
 class TAG(Enum):
     End = 0x0
