@@ -84,9 +84,11 @@ def test_tag_data_to_bytes():
     data = {'tag_name': 'unlimitedTracking', 'value': 0, 'type': 1}
 
     nbt_data = nbt.write_tag(buf, data)
-    raw_bytes = bytes.fromhex('01 00 11 75 6E 6C 69 6D 69 74 65 64 54 72 61 63 6B 69 6E 67 00')
+    output = '01 00 11 75 6E 6C 69 6D 69 74 65 64 54 72 61 63 6B 69 6E 67 00'
+    expected_output = bytes.fromhex(output)
 
-    assert nbt_data == raw_bytes, "data is not equal"
+    assert nbt_data == expected_output, "data is not equal"
+
 
 def test_tag_data_to_int():
     bio = io.BytesIO()
@@ -94,6 +96,31 @@ def test_tag_data_to_int():
     data = {'tag_name': 'zCenter', 'value': -3200, 'type': 3}
 
     nbt_data = nbt.write_tag(buf, data)
-    raw_bytes = bytes.fromhex('03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80')
+    output = '03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80'
+    expected_output = bytes.fromhex(output)
 
-    assert nbt_data == raw_bytes, "data is not equal"
+    assert nbt_data == expected_output, "data is not equal"
+
+
+def test_tag_data_to_double():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio) 
+    data = {'tag_name': 'BorderCenterZ', 'value': 0, 'type': 6}
+
+    nbt_data = nbt.write_tag(buf, data)
+    output = '06 00 0D 42 6F 72 64 65 72 43 65 6E 74 65 72 5A 00 00 00 00 00 00 00 00'
+    expected_output = bytes.fromhex(output)
+
+    assert nbt_data == expected_output, "data is not equal"
+
+
+def test_tag_data_to_float():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio) 
+    data = {'tag_name': 'walkSpeed', 'value': 0.10000000149011612, 'type': 5}
+
+    nbt_data = nbt.write_tag(buf, data)
+    output = '05 00 09 77 61 6C 6B 53 70 65 65 64 3D CC CC CD'
+    expected_output = bytes.fromhex(output)
+
+    assert nbt_data == expected_output, "data is not equal"
