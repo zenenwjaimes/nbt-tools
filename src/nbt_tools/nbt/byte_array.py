@@ -1,4 +1,5 @@
 from nbt_tools.nbt import byte
+from nbt_tools.nbt import main as nbt
 
 
 def byte_length() -> int:
@@ -16,3 +17,14 @@ def read(buf):
         values.append(val)
 
     return {'size': _size, 'value': values, 'size_bytes': 1}
+
+# TODO: Validate all the values passed in to make sure they're bytes
+def write(data):
+    res = b''.join([
+            nbt.get_tag_header(data),
+            bytes(data['tag_name'], 'utf-8'),
+            int(len(data['value'])).to_bytes(4, byteorder='big'),
+            bytes(data['value'])
+    ])
+
+    return res

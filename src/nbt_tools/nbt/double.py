@@ -17,7 +17,7 @@ def write(data):
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            struct.pack('d', data['value'])
+            struct.pack('>d', data['value'])
     ])
 
     return res 
