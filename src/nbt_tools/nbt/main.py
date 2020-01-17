@@ -171,15 +171,6 @@ def read_tag(buf, mutdata, only_once=False):
             'value': val
         })
 
-        if tag.value == 11:
-            x = {
-                'tag_name': data['name'],
-                'tag': tag,
-                'type': tag.value,
-                'value': val
-            }
-            print(x)
-
     if only_once is False:
         read_tag(buf, mutdata)
 
@@ -196,6 +187,10 @@ def write_tag(buf, data):
 
 
 def get_tag_header(data):
+    # avoid passing header data for list tag types
+    if 'type' not in data:
+        return b''
+
     return b''.join([
         int(data['type']).to_bytes(1, byteorder='big'),
         int(len(data['tag_name'])).to_bytes(2, byteorder='big')

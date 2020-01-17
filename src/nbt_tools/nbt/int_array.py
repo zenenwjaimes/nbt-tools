@@ -21,7 +21,6 @@ def read(buf):
 
 
 def write(data):
-    print(longs_to_bytes(data['value']))
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
