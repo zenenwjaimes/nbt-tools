@@ -1,4 +1,5 @@
 import struct
+from nbt_tools.nbt import main as nbt
 
 
 def byte_length() -> int:
@@ -11,3 +12,13 @@ def read(buf):
 
     # TODO: use numpy if precision is required, which it is
     return float(_float)
+
+
+def write(data):
+    res = b''.join([
+            nbt.get_tag_header(data),
+            bytes(data['tag_name'], 'utf-8'),
+            struct.pack(">f", data['value'])
+    ])
+
+    return res 

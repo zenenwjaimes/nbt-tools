@@ -229,6 +229,9 @@ def parse_nbt_file(args):
         nbt_data = nbt.unpack_nbt_file(src_path)
 
     if args.loglevel == 'DEBUG':
+        import pprint
+        pprint.pprint(nbt_data)
+    if args.loglevel == 'INFO':
         nbt.pretty_print_nbt_data(nbt_data, 1)
 
 

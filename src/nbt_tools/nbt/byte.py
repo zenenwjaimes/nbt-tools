@@ -15,7 +15,12 @@ def write(data):
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(data['value']).to_bytes(byte_length(), byteorder='big', signed=True)
+            int(
+                data['value']).to_bytes(
+                    byte_length(),
+                    byteorder='big',
+                    signed=True
+                )
     ])
 
     return res 
