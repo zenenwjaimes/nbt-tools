@@ -33,13 +33,25 @@ def read(buf):
 
 def write(data):
     list_data = data['value']
-    tag_type = nbt.tag_type(list_data['type'])
     list_output = []
+    internal_type = 0
+    payload_size = 0
 
-    if tag_type.value == nbt.TAG.Compound.value:
-        pass
+    if type(list_data) is list:
+        internal_type = nbt.TAG.Compound.value
+
+        for tag in list_data:
+            tag_type = nbt.tag_type(tag['type'])
+            tag_writer = nbt.get_tag_writer(tag_type)
+
+            list_output.append(tag_writer(tag))
+
     else:
+        tag_type = nbt.tag_type(list_data['type'])
         tag_writer = nbt.get_tag_writer(tag_type)
+
+        internal_type = data['value']['type']
+        payload_size = len(data['value']['value'])
 
         for tag in list_data['value']:
             list_output.append(tag_writer({'tag_name': '', 'value': tag}))
@@ -47,8 +59,8 @@ def write(data):
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(data['value']['type']).to_bytes(1, byteorder='big'), #tagId
-            int(len(data['value'])).to_bytes(4, byteorder='big'), #payload size
+            int(internal_type).to_bytes(1, byteorder='big'), #tagId
+            int(payload_size).to_bytes(4, byteorder='big'), #payload size
             b''.join(list_output)
     ])
 
