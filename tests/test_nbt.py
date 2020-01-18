@@ -339,7 +339,23 @@ def test_list_tag_data_with_compound_tags():
     output += '01 00 09 41 6D 70 6C 69 66 69 65 72 00 00' #amp + end tag
 
     expected_output = bytes.fromhex(output)
-    print(nbt_data.hex(' '))
-    print(expected_output.hex(' '))
 
     assert nbt_data == expected_output, "list with compound data is not equal"
+
+
+def test_nbt_dict_file_to_nbt_gzip(datadir):
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    lines = []
+
+    nbt_path = datadir.join("map_202.unpacked.dat")
+
+    with open(nbt_path,'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    dirty_data = eval(''.join(lines))
+    nbt_data = nbt.write_tag(buf, dirty_data)
+    print(dirty_data)
+
+    assert False
