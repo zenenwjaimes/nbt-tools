@@ -39,12 +39,13 @@ def write(data):
 
     if type(list_data) is list:
         internal_type = nbt.TAG.Compound.value
+        payload_size = len(list_data)
 
         for tag in list_data:
             tag_type = nbt.tag_type(tag['type'])
             tag_writer = nbt.get_tag_writer(tag_type)
 
-            list_output.append(tag_writer(tag))
+            list_output.append(tag_writer(tag, True))
 
     else:
         tag_type = nbt.tag_type(list_data['type'])
