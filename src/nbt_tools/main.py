@@ -6,12 +6,14 @@ offset from 0,0
 """
 
 import argparse
+import io
 import sys
 import logging
 import shutil
 import os.path
 import os
 import fnmatch
+import gzip
 
 from os import path
 from nbt_tools import __version__
@@ -114,7 +116,7 @@ def parse_args(args):
     )
     parser.add_argument(
         '--src-path',
-        help='Src path for nbt file(s)',
+        help='Src path for file(s)',
         required=True
     )
     help_msg = 'Use this option for region files,' \
@@ -127,6 +129,7 @@ def parse_args(args):
     )
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('--nbt', action='store_true')
+    group.add_argument('--gen-nbt', action='store_true')
     group.add_argument('--chunk-relocator', action='store_true')
     group.add_argument('--map-gen', action='store_true')
     group.add_argument('--region', action='store_true')
@@ -234,6 +237,25 @@ def parse_nbt_file(args):
     if args.loglevel == 'INFO':
         nbt.pretty_print_nbt_data(nbt_data, 1)
 
+def gen_nbt_file(args):
+    src_path = args.src_path
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    lines = []
+
+    with open(src_path, 'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    dirty_data = eval(''.join(lines))
+    nbt_data = nbt.write_tag(buf, dirty_data)
+
+    s_out = gzip.compress(nbt_data)
+    dest_path = 'heckle'
+
+    with open(dest_path, 'wb+') as f:
+        f.write(s_out)
+
 
 def run():
     """Main run command
@@ -249,6 +271,8 @@ def run():
         parse_nbt_file(args)
     if args.region:
         parse_region_file(args)
+    if args.gen_nbt:
+        gen_nbt_file(args)
 
 
 if __name__ == "__main__":

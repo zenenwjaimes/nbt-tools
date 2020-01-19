@@ -8,6 +8,7 @@ from nbt_tools.nbt import main as nbt
 from distutils import dir_util
 from pytest import fixture
 import io
+import gzip
 import os
 import pprint
 
@@ -154,7 +155,7 @@ def test_tag_data_to_byte_array():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
 
-    colors = [0x01, 0x55]
+    colors = {'size': 2, 'size_bytes': 1, 'value': [0x01, 0x55]}
     data = {'tag_name': 'colors', 'value': colors, 'type': 7}
 
     nbt_data = nbt.write_tag(buf, data)
@@ -356,6 +357,6 @@ def test_nbt_dict_file_to_nbt_gzip(datadir):
 
     dirty_data = eval(''.join(lines))
     nbt_data = nbt.write_tag(buf, dirty_data)
-    print(dirty_data)
 
+    s_out = gzip.compress(nbt_data)
     assert False
