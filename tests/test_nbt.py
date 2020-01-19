@@ -8,6 +8,7 @@ from nbt_tools.nbt import main as nbt
 from distutils import dir_util
 from pytest import fixture
 import io
+import gzip
 import os
 import pprint
 
@@ -154,7 +155,7 @@ def test_tag_data_to_byte_array():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
 
-    colors = [0x01, 0x55]
+    colors = {'size': 2, 'size_bytes': 1, 'value': [0x01, 0x55]}
     data = {'tag_name': 'colors', 'value': colors, 'type': 7}
 
     nbt_data = nbt.write_tag(buf, data)
@@ -226,3 +227,136 @@ def test_scalar_type_tag_data_to_list():
     expected_output = bytes.fromhex(output)
 
     assert nbt_data == expected_output, "list data is not equal"
+
+
+def test_multiple_tag_data_to_compound():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+
+    data = {
+                'tag_name': '',
+                'type': 10,
+                'value': [
+                    {
+                        'tag_name': 'data',
+                        'type': 10,
+                        'value': [
+                            {
+                                'tag_name': 'Raids',
+                                'type': 9,
+                                'value': {'type': 0, 'value': []}
+                            },
+                           {
+                                'tag_name': 'NextAvailableID',
+                                'type': 3,
+                                'value': 8
+                            },
+                           {
+                                'tag_name': 'Tick',
+                                'type': 3,
+                                'value': 25474854
+                            }
+                        ]
+                    },
+                    {
+                        'tag_name': 'DataVersion',
+                        'type': 3,
+                        'value': 2229
+                    }
+                ]
+            }
+
+    nbt_data = nbt.write_tag(buf, data)
+
+    output = '0a 00 00 0a 00 04 64 61 74 61 09 00 05 52 61 69 '
+    output += '64 73 00 00 00 00 00 03 00 0f 4e 65 78 74 41 76 '
+    output += '61 69 6c 61 62 6c 65 49 44 00 00 00 08 03 00 04 '
+    output += '54 69 63 6b 01 84 b7 26 00 03 00 0b 44 61 74 61 '
+    output += '56 65 72 73 69 6f 6e 00 00 08 b5 00'
+
+    expected_output = bytes.fromhex(output)
+    
+    #print(nbt_data.hex(' '))
+    #print(expected_output.hex(' '))
+
+    assert nbt_data == expected_output, "compound data is not equal"
+
+
+def test_list_tag_data_with_compound_tags():
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+
+    data = {
+                'tag_name': 'ActiveEffects',
+                'type': 9,
+                'value': [
+                    {
+                        'tag_name': '',
+                        'type': 10,
+                        'value': [
+                            {
+                                'tag_name': 'Ambient',
+                                'type': 1,
+                                'value': 0
+                            },
+                            {
+                                'tag_name': 'ShowIcon',
+                                'type': 1,
+                                'value': 1
+                            },
+                            {
+                                'tag_name': 'ShowParticles',
+                                'type': 1,
+                                'value': 0
+                            },
+                           {
+                                'tag_name': 'Duration',
+                                'type': 3,
+                                'value': 200
+                            },
+                           {
+                                'tag_name': 'Id',
+                                'type': 1,
+                                'value': 13
+                            },
+                           {
+                                'tag_name': 'Amplifier',
+                                'type': 1,
+                                'value': 0
+                            }
+                        ]
+                    }
+                ]
+            }
+
+    nbt_data = nbt.write_tag(buf, data)
+
+    output = '09 00 0D 41 63 74 69 76 65 45 66 66 65 63 74 73 ' #compound
+    output += '0A 00 00 00 01 01 00 07 41 6D 62 69 65 6E 74 00 ' #ambient
+    output += '01 00 08 53 68 6F 77 49 63 6F 6E 01 ' #showicon
+    output += '01 00 0D 53 68 6F 77 50 61 72 74 69 63 6C 65 73 00 ' #showpart
+    output += '03 00 08 44 75 72 61 74 69 6F 6E 00 00 00 C8 ' #duration
+    output += '01 00 02 49 64 0D ' #id
+    output += '01 00 09 41 6D 70 6C 69 66 69 65 72 00 00' #amp + end tag
+
+    expected_output = bytes.fromhex(output)
+
+    assert nbt_data == expected_output, "list with compound data is not equal"
+
+
+def test_nbt_dict_file_to_nbt_gzip(datadir):
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    lines = []
+
+    nbt_path = datadir.join("map_202.unpacked.dat")
+
+    with open(nbt_path,'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    dirty_data = eval(''.join(lines))
+    nbt_data = nbt.write_tag(buf, dirty_data)
+
+    s_out = gzip.compress(nbt_data)
+    assert False

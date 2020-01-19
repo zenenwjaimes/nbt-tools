@@ -1,5 +1,6 @@
 from nbt_tools.nbt import byte
 from nbt_tools.nbt import main as nbt
+import struct
 
 
 def byte_length() -> int:
@@ -20,11 +21,14 @@ def read(buf):
 
 # TODO: Validate all the values passed in to make sure they're bytes
 def write(data):
+    arr = data['value']['value']
+    packed = list(map(lambda _byte: struct.pack('>b', _byte), arr))
+
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(len(data['value'])).to_bytes(4, byteorder='big'),
-            bytes(data['value'])
+            int(len(data['value']['value'])).to_bytes(4, byteorder='big'),
+            b''.join(packed)
     ])
 
     return res

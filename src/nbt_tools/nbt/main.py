@@ -135,7 +135,7 @@ def tag_name(buf) -> str:
     length_small_byte = to_byte(buf.read(1))
 
     length = length_big_byte | length_small_byte
-    tag_name = buf.read(length) if length > 0 else b'root'
+    tag_name = buf.read(length) if length > 0 else b''
 
     return tag_name.decode("utf-8")
 
@@ -166,7 +166,7 @@ def read_tag(buf, mutdata, only_once=False):
 
         mutdata.append({
             'tag_name': data['name'],
-            'tag': tag,
+            #'tag': tag,
             'type': tag.value,
             'value': val
         })

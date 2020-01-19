@@ -12,20 +12,30 @@ def read(buf):
     return newdata
 
 
-def write(data):
+def write(data, list_type=False):
     list_data = data['value']
-    tag_type = nbt.tag_type(list_data['type'])
     list_output = []
+    end_tag = nbt.get_tag_writer(nbt.tag_type(nbt.TAG.End))({})
 
-    tag_writer = nbt.get_tag_writer(tag_type)
+    for tag in list_data:
+        tag_type = nbt.tag_type(tag['type'])
+        tag_writer = nbt.get_tag_writer(tag_type)
 
-    for tag in list_data['value']:
         list_output.append(tag_writer(tag))
-
-    res = b''.join([
-            nbt.get_tag_header(data),
-            bytes(data['tag_name'], 'utf-8'),
-            b''.join(list_output)
-    ])
+   
+    # TODO: Fix this hack. it's to prevent a list of compound type
+    # from adding the tag header twice since the list adds tagId
+    if list_type == True:
+        res = b''.join([
+                b''.join(list_output),
+                end_tag
+        ])
+    else:
+        res = b''.join([
+                nbt.get_tag_header(data),
+                bytes(data['tag_name'], 'utf-8'),
+                b''.join(list_output),
+                end_tag
+        ])
 
     return res
