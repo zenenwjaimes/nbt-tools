@@ -76,7 +76,7 @@ def unpack_nbt_file(filename: str, fn=gzip.open):
 def pretty_print(indent, tag, name, val={}):
     print('{} -> {} name={} value={}'.format(
             indent * "\t",
-            tag['tag'].name,
+            tag,
             name,
             val
         )
@@ -94,31 +94,18 @@ def pretty_print_nbt_data(nbt_data, indent=0):
                 val = tag['value']
 
                 if type(val) is list:
-                    print('{} -> {} -> name={}'.format(
-                        '\t' * indent,
-                        tag['tag'].name,
-                        tag['tag_name']
-                    ))
+                    pretty_print(indent, TAG(tag['type']).name, tag['tag_name'] if 'tag_name' in tag else '')
                     pretty_print_nbt_data(val, indent + 1)
                 else:
                     if type(tag['value']) is dict:
-                        print('{} -> {} -> name={}'.format(
-                            '\t' * indent,
-                            tag['tag'].name,
-                            tag['tag_name']
-                        ))
+                        pretty_print(indent, TAG(tag['type']).name, tag['tag_name'])
 
                         if type(tag['value']) is list:
                             pretty_print_nbt_data([tag['value']], indent + 1)
                         else:
                             pretty_print_nbt_data(tag, indent + 1)
                     else:
-                        print('{} -> {} -> name={} value={}'.format(
-                            '\t' * indent,
-                            tag['tag'].name,
-                            tag['tag_name'],
-                            tag['value']
-                        ))
+                        pretty_print(indent, TAG(tag['type']).name, tag['tag_name'], tag['value'])
             else:
                 print('{} -> {}'.format('\t' * indent, tag))
     else:
@@ -176,6 +163,9 @@ def read_tag(buf, mutdata, only_once=False):
 
 
 def write_tag(buf, data):
+    if 'type' not in data and type(data) is list:
+        return write_tag(buf, data[0])
+
     _type = data['type']
     tag = tag_type(_type)
 

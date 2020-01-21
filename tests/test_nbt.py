@@ -75,8 +75,8 @@ def test_nbt_root_tag(datadir):
 
     assert nbt_data[0]['type'] == nbt.TAG.Compound.value, \
             "tag isn't compound tag"
-    assert nbt_data[0]['tag_name'] == "root", \
-            "compound tag name to start file isn't 'root'"
+    assert nbt_data[0]['tag_name'] == "", \
+            "compound tag name to start file isn't empty, which is root"
 
 
 def test_tag_data_to_bytes():
@@ -171,7 +171,7 @@ def test_tag_data_to_long_array():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
 
-    block_states = [1229782938247303441, 1229782938247303441, 1229782938532516113]
+    block_states = {'size': 3, 'size_bytes': 8, 'value': [1229782938247303441, 1229782938247303441, 1229782938532516113]}
     data = {'tag_name': 'BlockStates', 'value': block_states, 'type': 12}
 
     nbt_data = nbt.write_tag(buf, data)
@@ -190,14 +190,14 @@ def test_tag_data_to_int_array():
     # 45: Lukewarm Ocean
     # 5: Taiga
     # 19: Taiga Hills
-    biomes = [45, 45, 5, 19]
+    biomes = {'size': 4, 'size_bytes': 4, 'value': [45, 45, 5, 19]}
     data = {'tag_name': 'Biomes', 'value': biomes, 'type': 11}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '0B 00 06 42 69 6F 6D 65 73 00 00 00 04 00 00 00 2D 00 00 00 2D 00 00 00 05 00 00 00 13'
     expected_output = bytes.fromhex(output)
 
-    print('expected {} got {}'.format(expected_output, nbt_data))
+    print('exp {}\ngot {}'.format(expected_output, nbt_data))
 
     assert nbt_data == expected_output, "int array data is not equal"
 
