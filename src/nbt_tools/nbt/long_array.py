@@ -21,12 +21,11 @@ def read(buf):
 
 # TODO: Validate all the values passed in to make sure they're longs
 def write(data):
-    print(longs_to_bytes(data['value']))
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(len(data['value'])).to_bytes(4, byteorder='big'), #payload size
-            b''.join(longs_to_bytes(data['value']))
+            int(len(data['value']['value'])).to_bytes(4, byteorder='big'), #payload size
+            b''.join(longs_to_bytes(data['value']['value']))
     ])
 
     return res

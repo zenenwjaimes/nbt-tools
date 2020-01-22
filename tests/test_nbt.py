@@ -11,6 +11,7 @@ import io
 import gzip
 import os
 import pprint
+import zlib
 
 __author__ = "zenen jaimes"
 __copyright__ = "zenen jaimes"
@@ -75,8 +76,8 @@ def test_nbt_root_tag(datadir):
 
     assert nbt_data[0]['type'] == nbt.TAG.Compound.value, \
             "tag isn't compound tag"
-    assert nbt_data[0]['tag_name'] == "root", \
-            "compound tag name to start file isn't 'root'"
+    assert nbt_data[0]['tag_name'] == "", \
+            "compound tag name to start file isn't empty, which is root"
 
 
 def test_tag_data_to_bytes():
@@ -171,7 +172,7 @@ def test_tag_data_to_long_array():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
 
-    block_states = [1229782938247303441, 1229782938247303441, 1229782938532516113]
+    block_states = {'size': 3, 'size_bytes': 8, 'value': [1229782938247303441, 1229782938247303441, 1229782938532516113]}
     data = {'tag_name': 'BlockStates', 'value': block_states, 'type': 12}
 
     nbt_data = nbt.write_tag(buf, data)
@@ -190,14 +191,14 @@ def test_tag_data_to_int_array():
     # 45: Lukewarm Ocean
     # 5: Taiga
     # 19: Taiga Hills
-    biomes = [45, 45, 5, 19]
+    biomes = {'size': 4, 'size_bytes': 4, 'value': [45, 45, 5, 19]}
     data = {'tag_name': 'Biomes', 'value': biomes, 'type': 11}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '0B 00 06 42 69 6F 6D 65 73 00 00 00 04 00 00 00 2D 00 00 00 2D 00 00 00 05 00 00 00 13'
     expected_output = bytes.fromhex(output)
 
-    print('expected {} got {}'.format(expected_output, nbt_data))
+    print('exp {}\ngot {}'.format(expected_output, nbt_data))
 
     assert nbt_data == expected_output, "int array data is not equal"
 
@@ -360,3 +361,43 @@ def test_nbt_dict_file_to_nbt_gzip(datadir):
 
     s_out = gzip.compress(nbt_data)
     assert False
+
+
+def test_zlib_hex_string_back_to_gzip(datadir):
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    lines = []
+
+    nbt_path = datadir.join('zlib')
+
+    with open(nbt_path,'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    expected_zlib_data = bytes.fromhex(''.join(lines))
+
+    exp_bytes = zlib.decompress(expected_zlib_data)
+    nbt_data = nbt.read_nbt_bytes(exp_bytes)
+
+    gen_nbt_data = nbt.write_tag(buf, nbt_data)
+    second_pass_nbt_data = nbt.read_nbt_bytes(gen_nbt_data)
+
+    written_out = zlib.compress(exp_bytes, 0)
+    gen_out = zlib.compress(gen_nbt_data)
+    
+    second_gen_out = zlib.decompress(gen_out)
+    second_nbt_data = nbt.read_nbt_bytes(second_gen_out)
+    
+    bleg = nbt.read_nbt_bytes(bootleg)
+    offi = nbt.read_nbt_bytes(official)
+    pprint.pprint(bleg)
+    pprint.pprint(offi)
+
+    assert second_nbt_data == nbt_data, 'nbt from first pass not equal to second'
+    assert False
+
+
+    err_msg = 'Unable to convert zlib data to parsed tags back to zlib'
+
+    assert len(written_out) == len(expected_zlib_data), 'Invalid '
+    assert written_out == expected_zlib_data, err_msg
