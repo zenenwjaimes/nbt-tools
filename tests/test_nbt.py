@@ -5,8 +5,10 @@ NBT reading
 import pytest
 from nbt_tools.nbt import *
 from nbt_tools.nbt import main as nbt
+from nbt_tools.region import main as region
 from distutils import dir_util
 from pytest import fixture
+import json
 import io
 import gzip
 import os
@@ -345,59 +347,45 @@ def test_list_tag_data_with_compound_tags():
     assert nbt_data == expected_output, "list with compound data is not equal"
 
 
-def test_nbt_dict_file_to_nbt_gzip(datadir):
+# TODO: Revisit this test
+#def test_nbt_dict_file_to_nbt_gzip(datadir):
+#    bio = io.BytesIO()
+#    buf = io.BufferedWriter(bio)
+#    lines = []
+#
+#    nbt_path = datadir.join("map_202.unpacked.dat")
+#
+#    with open(nbt_path,'r') as inf:
+#        for line in inf:
+#            lines.append(line)
+#
+#    dirty_data = eval(''.join(lines))
+#    nbt_data = nbt.write_tag(buf, dirty_data)
+#
+#    s_out = gzip.compress(nbt_data)
+#    assert False
+
+
+def test_region_file_read(datadir):
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
+
     lines = []
 
-    nbt_path = datadir.join("map_202.unpacked.dat")
-
+    nbt_path = datadir.join('r.2.1.mca')
     with open(nbt_path,'r') as inf:
         for line in inf:
             lines.append(line)
 
     dirty_data = eval(''.join(lines))
-    nbt_data = nbt.write_tag(buf, dirty_data)
+    chunks = dirty_data['chunks']
+    region.save_region('/home/slasherx/r.2.1.mca', dirty_data)
 
-    s_out = gzip.compress(nbt_data)
+    #nbt_data = region.load_region(str(nbt_path))
+    #import sys
+    #sys.stdout = open('/tmp/output', 'w')
+    #print(nbt_data)
+    #sys.stdout.close()
+    #sys.stdout = sys.__stdout__
+
     assert False
-
-
-def test_zlib_hex_string_back_to_gzip(datadir):
-    bio = io.BytesIO()
-    buf = io.BufferedWriter(bio)
-    lines = []
-
-    nbt_path = datadir.join('zlib')
-
-    with open(nbt_path,'r') as inf:
-        for line in inf:
-            lines.append(line)
-
-    expected_zlib_data = bytes.fromhex(''.join(lines))
-
-    exp_bytes = zlib.decompress(expected_zlib_data)
-    nbt_data = nbt.read_nbt_bytes(exp_bytes)
-
-    gen_nbt_data = nbt.write_tag(buf, nbt_data)
-    second_pass_nbt_data = nbt.read_nbt_bytes(gen_nbt_data)
-
-    written_out = zlib.compress(exp_bytes, 0)
-    gen_out = zlib.compress(gen_nbt_data)
-    
-    second_gen_out = zlib.decompress(gen_out)
-    second_nbt_data = nbt.read_nbt_bytes(second_gen_out)
-    
-    bleg = nbt.read_nbt_bytes(bootleg)
-    offi = nbt.read_nbt_bytes(official)
-    pprint.pprint(bleg)
-    pprint.pprint(offi)
-
-    assert second_nbt_data == nbt_data, 'nbt from first pass not equal to second'
-    assert False
-
-
-    err_msg = 'Unable to convert zlib data to parsed tags back to zlib'
-
-    assert len(written_out) == len(expected_zlib_data), 'Invalid '
-    assert written_out == expected_zlib_data, err_msg
