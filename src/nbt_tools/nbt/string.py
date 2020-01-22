@@ -21,4 +21,4 @@ def write(data):
             bytes(data['value'], 'utf-8')
     ])
 
-    return res 
+    return res

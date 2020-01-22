@@ -23,4 +23,4 @@ def write(data):
                 )
     ])
 
-    return res 
+    return res

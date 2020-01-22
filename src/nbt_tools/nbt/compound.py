@@ -22,10 +22,10 @@ def write(data, list_type=False):
         tag_writer = nbt.get_tag_writer(tag_type)
 
         list_output.append(tag_writer(tag))
-   
+
     # TODO: Fix this hack. it's to prevent a list of compound type
     # from adding the tag header twice since the list adds tagId
-    if list_type == True:
+    if list_type is True:
         res = b''.join([
                 b''.join(list_output),
                 end_tag

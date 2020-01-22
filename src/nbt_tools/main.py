@@ -213,26 +213,11 @@ def parse_region_file(args):
 
     debug = True if args.loglevel == 'DEBUG' else False
     nbt_data = region.load_region(src_path, debug)
-    #for chunk_data in nbt_data['chunks']:
-        #print(chunk_data['chunk'])
-        #pass
 
-    region.save_region('blue', nbt_data)
+    region.save_region(src_path, nbt_data)
 
     if debug:
-        nbt.pretty_print_nbt_data(chunk_data['chunk'])
-        #for chunk_data in nbt_data['chunks']:
-        #    print(chunk_data['chunk'])
-        #    break
-
-    #chunks = []
-    #for chunk_data in nbt_data['chunks']:
-    #    bio = io.BytesIO()
-    #    buf = io.BufferedWriter(bio)
-    #    chunk_nbt = nbt.write_tag(buf, chunk_data['chunk'])
-    #    chunks.append(chunk_nbt)
-
-    #_chunk_bytes = b''.join(chunks)
+        nbt.pretty_print_nbt_data(nbt_data['chunk'])
 
 
 def parse_nbt_file(args):
@@ -251,6 +236,7 @@ def parse_nbt_file(args):
         pprint.pprint(nbt_data)
     if args.loglevel == 'INFO':
         nbt.pretty_print_nbt_data(nbt_data, 1)
+
 
 def gen_nbt_file(args):
     src_path = args.src_path

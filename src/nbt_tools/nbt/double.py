@@ -20,4 +20,4 @@ def write(data):
             struct.pack('>d', data['value'])
     ])
 
-    return res 
+    return res
