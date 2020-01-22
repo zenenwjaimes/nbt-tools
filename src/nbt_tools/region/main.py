@@ -5,6 +5,7 @@ import io
 import struct
 import zlib
 import math
+import pprint
 
 Point = collections.namedtuple('Point', 'x y')
 Chunk = collections.namedtuple('Chunk', 'x z')
@@ -25,61 +26,63 @@ def load_region(filename, debug=False):
 
 def save_region(filename, nbt_data):
     bio = io.BytesIO()
-    buf = io.BufferedWriter(bio)
+    buf = io.BufferedWriter(bio, nbt_data['approx_size'])
+    i = 0
 
     # write chunk location
     for loc in nbt_data['locations']:
+        buf.seek(i)
         tree_fitty = struct.pack(">I", loc['offset'])
+        offset = tree_fitty[-3:]
+        sectors = struct.pack('>b', loc['sectors'])
 
-        buf.write(tree_fitty[-3:]) # offset
-        buf.write(struct.pack('>b', loc['sectors'])) # sector count
+        buf.write(offset)
+        buf.write(sectors)
+
+        i += 4
 
     # write chunk timestamps
     for ts in nbt_data['timestamps']:
         buf.write(struct.pack('>i', ts['ts'])) # timestamps
 
-    chunks = []
+    for chunk_data in nbt_data['chunks']:
+        # write chunk data...
+        _i = io.BytesIO()
+        _b = io.BufferedWriter(_i)
 
-    # write chunk data...
-    _i = io.BytesIO()
-    _b = io.BufferedWriter(_i)
-
-    # TODO: Fix this sorting issue. Chunks need to be written in a 
-    # specific order.
-    chunky = nbt_data['chunks']
-    sorted_chunks = sorted(chunky, key=lambda x: x['offset'])
-
-    for chunk_data in sorted_chunks:
         if len(chunk_data['chunk']) > 0:
             chunk_nbt = nbt.write_tag(_b, chunk_data['chunk'])
         else:
             chunk_nbt = b''
 
-        b_len = struct.pack('>I', chunk_data['length'])
-        b_comp = struct.pack('>B', chunk_data['compression'])
         b_data = zlib.compress(chunk_nbt)
+        b_len = struct.pack('>i', len(b_data))
+        b_comp = struct.pack('>b', chunk_data['compression'])
 
         b_enc = b''.join([b_len, b_comp, b_data])
-
-        chunks.append(b_enc)
+        
+        buf.seek(chunk_data['offset'])
+        buf.write(b_enc)
 
         padding = (math.ceil(len(b_enc)/4096)*4096) - len(b_enc)
-        chunks.append(b'\x00' * padding)
+        buf.write(b'\x00' * padding)
 
-    _chunk_bytes = b''.join(chunks)
-    _i.close()
-    _b.close()
+        _i.close()
+        _b.close()
 
-    buf.write(_chunk_bytes)
-    #print('CHUNK LEN IS {} needs padding of {}'.format(len(_chunk_bytes), padding))
-    #buf.write(b'\x00' * padding)
-    buf.seek(0)
 
     dest_path = 'heckle_1'
+    buf.seek(0)
+    buf.flush()
 
-    with open(dest_path, 'wb') as f:
-        f.write(bio.read())
+    res = bio.read()
 
+    f = open(dest_path, 'wb')
+    f.write(res)
+    f.close()
+
+    bio.close()
+    buf.close()
 
 def parse_region_data(header, region_data, region):
     chunks = []
@@ -91,12 +94,13 @@ def parse_region_data(header, region_data, region):
 
     location_tuples = [
             Chunk(x, z)
-            for x in range(reg_x, reg_x + 32)
             for z in range(reg_z, reg_z + 32)
+            for x in range(reg_x, reg_x + 32)
     ]
 
     temp_header = bytes(header[0:8192])
     temp_chunk_data = bytes(region_data)
+    total_size = 8192 # at least header present
 
     for coords in location_tuples:
         chunk = Chunk._make(coords)
@@ -107,15 +111,16 @@ def parse_region_data(header, region_data, region):
         locations.append(chunk_loc_data)
         timestamps.append(chunk_ts_data)
 
-        print(chunk_loc_data)
-
-        chunks.append(get_chunk_data(
+        chunk_data = get_chunk_data(
                 temp_chunk_data,
                 chunk,
                 {'loc': chunk_loc_data, 'ts': chunk_ts_data}
-        ))
+        )
+        
+        total_size += chunk_data['sectors'] * 4096
+        chunks.append(chunk_data)
 
-    res = {'locations': locations, 'timestamps': timestamps, 'chunks': chunks}
+    res = {'locations': locations, 'timestamps': timestamps, 'chunks': chunks, 'approx_size': total_size}
 
     return res
 
@@ -132,17 +137,13 @@ def get_chunk_data(region_data, chunk, info):
         return {
             'data': b'',
             'chunk': [],
-            'unc': b'',
             'x': chunk.x,
             'z': chunk.z,
             'length': 0,
-            'offset': info['loc']['offset'],
+            'sectors': 0,
+            'offset': fixed_offset,
             'compression': 0
         }
-    print('INITIAL LOC: {}'.format(loc_offset))
-    #loc_offset = ((loc_offset >> 8) * 4096)
-
-    print('LOC {}'.format(loc_offset))
 
     b0 = region_data[loc_offset+0]
     b1 = region_data[loc_offset+1]
@@ -152,26 +153,20 @@ def get_chunk_data(region_data, chunk, info):
     loc_offset += 5
 
     length = (b0 << 24) | (b1 << 16) | (b2 << 8) | b3
-    print('LENGTH IS {} of ({}, {})'.format((length) - 1, chunk.x, chunk.z))
     loc_offset_end = loc_offset + (sectors * 4096) - 5
 
     compressed_data = region_data[loc_offset:loc_offset_end]
-
-    print('loc offset is {} with end offset {} for x {} z {} offset {}'.format(loc_offset + 8192, loc_offset_end + 8192, chunk.x, chunk.z, info['loc']['offset']))
-
     chunk_data = zlib.decompress(compressed_data)
-
     chunky = nbt.read_nbt_bytes(chunk_data)
 
-    xPos = nbt.get_tag_node(['root', 'xPos'], chunky)
-    zPos = nbt.get_tag_node(['root', 'zPos'], chunky)
+    xPos = nbt.get_tag_node(['', 'Level', 'xPos'], chunky)
+    zPos = nbt.get_tag_node(['', 'Level', 'zPos'], chunky)
 
     return {
             'data': chunk_data,
-            'unc': compressed_data,
             'chunk': chunky,
-            'x': xPos,
-            'z': zPos,
+            'x': xPos['value'],
+            'z': zPos['value'],
             'length': length,
             'sectors': sectors,
             'offset': fixed_offset,
@@ -193,7 +188,6 @@ def get_timestamp_data(header, chunk):
 
 
 def get_location_data(header, chunk):
-    print(chunk)
     int_offset =  ((chunk.x & 0x1f) + (chunk.z & 0x1f) * 32)  * 4 #region_math.get_chunk_location(chunk.x, chunk.z)
 
     b0 = header[int_offset+0]

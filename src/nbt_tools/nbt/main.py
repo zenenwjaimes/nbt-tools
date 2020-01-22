@@ -34,16 +34,32 @@ def to_byte(byte):
     return struct.unpack('>b', byte)[0]
 
 
+def to_byte_byte(i):
+    return struct.pack('>b', i)
+
+
 def to_short(byte):
     return struct.unpack('>h', byte)[0]
+
+
+def to_byte_short(i):
+    return struct.pack('>h', i)
 
 
 def to_int(byte):
     return struct.unpack('>i', byte)[0]
 
 
+def to_byte_int(i):
+    return struct.pack('>i', i)
+
+
 def to_long(byte):
     return struct.unpack('>q', byte)[0]
+
+
+def to_byte_long(i):
+    return struct.pack('>q', i)
 
 
 def read_nbt_bytes(byte_data):

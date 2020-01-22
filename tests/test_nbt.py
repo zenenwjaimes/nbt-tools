@@ -11,6 +11,7 @@ import io
 import gzip
 import os
 import pprint
+import zlib
 
 __author__ = "zenen jaimes"
 __copyright__ = "zenen jaimes"
@@ -360,3 +361,43 @@ def test_nbt_dict_file_to_nbt_gzip(datadir):
 
     s_out = gzip.compress(nbt_data)
     assert False
+
+
+def test_zlib_hex_string_back_to_gzip(datadir):
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    lines = []
+
+    nbt_path = datadir.join('zlib')
+
+    with open(nbt_path,'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    expected_zlib_data = bytes.fromhex(''.join(lines))
+
+    exp_bytes = zlib.decompress(expected_zlib_data)
+    nbt_data = nbt.read_nbt_bytes(exp_bytes)
+
+    gen_nbt_data = nbt.write_tag(buf, nbt_data)
+    second_pass_nbt_data = nbt.read_nbt_bytes(gen_nbt_data)
+
+    written_out = zlib.compress(exp_bytes, 0)
+    gen_out = zlib.compress(gen_nbt_data)
+    
+    second_gen_out = zlib.decompress(gen_out)
+    second_nbt_data = nbt.read_nbt_bytes(second_gen_out)
+    
+    bleg = nbt.read_nbt_bytes(bootleg)
+    offi = nbt.read_nbt_bytes(official)
+    pprint.pprint(bleg)
+    pprint.pprint(offi)
+
+    assert second_nbt_data == nbt_data, 'nbt from first pass not equal to second'
+    assert False
+
+
+    err_msg = 'Unable to convert zlib data to parsed tags back to zlib'
+
+    assert len(written_out) == len(expected_zlib_data), 'Invalid '
+    assert written_out == expected_zlib_data, err_msg
