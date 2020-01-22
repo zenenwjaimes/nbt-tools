@@ -16,6 +16,7 @@ def filename_to_region_coords(filename):
                 filename[rpos:]
                 .replace('r.', '')
                 .replace('.mca', '')
+                .replace('.old', '')
                 .replace('.', ',')
                 .split(',')
             )
@@ -62,12 +63,12 @@ def save_region(filename, nbt_data):
         _i = io.BytesIO()
         _b = io.BufferedWriter(_i)
 
+        b_data = b''
+
         if len(chunk_data['chunk']) > 0:
             chunk_nbt = nbt.write_tag(_b, chunk_data['chunk'])
-        else:
-            chunk_nbt = b''
+            b_data = zlib.compress(chunk_nbt)
 
-        b_data = zlib.compress(chunk_nbt)
         b_len = struct.pack('>i', len(b_data))
         b_comp = struct.pack('>b', chunk_data['compression'])
         b_enc = b''.join([b_len, b_comp, b_data])
@@ -86,7 +87,7 @@ def save_region(filename, nbt_data):
 
     res = bio.read()
 
-    f = open('r.{}.{}.mca.fixed'.format(region.x, region.z), 'wb')
+    f = open('/tmp/r.{}.{}.mca.fixed'.format(region.x, region.z), 'wb')
     f.write(res)
     f.close()
 
@@ -179,7 +180,7 @@ def get_chunk_data(region_data, chunk, info):
     zPos = nbt.get_tag_node(['', 'Level', 'zPos'], chunky)
 
     return {
-            'data': chunk_data,
+            'data': b'', # chunk_data,
             'chunk': chunky,
             'x': xPos['value'],
             'z': zPos['value'],
