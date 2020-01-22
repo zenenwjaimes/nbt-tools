@@ -24,7 +24,8 @@ def write(data):
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(len(data['value']['value'])).to_bytes(4, byteorder='big'), #payload size
+            # payload size
+            int(len(data['value']['value'])).to_bytes(4, byteorder='big'),
             b''.join(longs_to_bytes(data['value']['value']))
     ])
 

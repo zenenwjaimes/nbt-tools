@@ -19,7 +19,7 @@ def write(data):
                     byte_length(),
                     byteorder='big',
                     signed=True
-                )
+            )
     ])
 
-    return res 
+    return res

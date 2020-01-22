@@ -10,9 +10,10 @@ TAG Format
 0: TAG id
 1-2: Tag Name Length
 3-x: Tag Name
-x-: Tag Data 
+x-: Tag Data
 
 """
+
 
 class TAG(Enum):
     End = 0x0
@@ -110,18 +111,27 @@ def pretty_print_nbt_data(nbt_data, indent=0):
                 val = tag['value']
 
                 if type(val) is list:
-                    pretty_print(indent, TAG(tag['type']).name, tag['tag_name'] if 'tag_name' in tag else '')
+                    tag_name = tag['tag_name'] if 'tag_name' in tag else ''
+                    pretty_print(indent, TAG(tag['type']).name, tag_name)
                     pretty_print_nbt_data(val, indent + 1)
                 else:
                     if type(tag['value']) is dict:
-                        pretty_print(indent, TAG(tag['type']).name, tag['tag_name'])
+                        pretty_print(
+                                indent,
+                                TAG(tag['type']).name,
+                                tag['tag_name']
+                        )
 
                         if type(tag['value']) is list:
                             pretty_print_nbt_data([tag['value']], indent + 1)
                         else:
                             pretty_print_nbt_data(tag, indent + 1)
                     else:
-                        pretty_print(indent, TAG(tag['type']).name, tag['tag_name'], tag['value'])
+                        pretty_print(
+                                indent,
+                                TAG(tag['type']).name,
+                                tag['tag_name'], tag['value']
+                        )
             else:
                 print('{} -> {}'.format('\t' * indent, tag))
     else:
@@ -169,7 +179,6 @@ def read_tag(buf, mutdata, only_once=False):
 
         mutdata.append({
             'tag_name': data['name'],
-            #'tag': tag,
             'type': tag.value,
             'value': val
         })

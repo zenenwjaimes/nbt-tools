@@ -19,6 +19,7 @@ def read(buf):
 
     return {'size': _size, 'value': values, 'size_bytes': 1}
 
+
 # TODO: Validate all the values passed in to make sure they're bytes
 def write(data):
     arr = data['value']['value']

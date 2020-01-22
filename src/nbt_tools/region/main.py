@@ -5,16 +5,27 @@ import io
 import struct
 import zlib
 import math
-import pprint
 
 Point = collections.namedtuple('Point', 'x y')
 Chunk = collections.namedtuple('Chunk', 'x z')
 
 
+def filename_to_region_coords(filename):
+    rpos = filename.find('r.')
+    region = (
+                filename[rpos:]
+                .replace('r.', '')
+                .replace('.mca', '')
+                .replace('.', ',')
+                .split(',')
+            )
+
+    return Chunk(region[0], region[1])
+
+
 def load_region(filename, debug=False):
     data = {}
-    rpos = filename.find('r.')
-    region = filename[rpos:].replace('r.', '').replace('.mca','').replace('.',',').split(',')
+    region = filename_to_region_coords(filename)
 
     with open(filename, 'rb') as fp:
         header_data = fp.read(8192)
@@ -25,6 +36,7 @@ def load_region(filename, debug=False):
 
 
 def save_region(filename, nbt_data):
+    region = filename_to_region_coords(filename)
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio, nbt_data['approx_size'])
     i = 0
@@ -43,7 +55,7 @@ def save_region(filename, nbt_data):
 
     # write chunk timestamps
     for ts in nbt_data['timestamps']:
-        buf.write(struct.pack('>i', ts['ts'])) # timestamps
+        buf.write(struct.pack('>i', ts['ts']))  # timestamps
 
     for chunk_data in nbt_data['chunks']:
         # write chunk data...
@@ -58,9 +70,8 @@ def save_region(filename, nbt_data):
         b_data = zlib.compress(chunk_nbt)
         b_len = struct.pack('>i', len(b_data))
         b_comp = struct.pack('>b', chunk_data['compression'])
-
         b_enc = b''.join([b_len, b_comp, b_data])
-        
+
         buf.seek(chunk_data['offset'])
         buf.write(b_enc)
 
@@ -70,27 +81,26 @@ def save_region(filename, nbt_data):
         _i.close()
         _b.close()
 
-
-    dest_path = 'heckle_1'
     buf.seek(0)
     buf.flush()
 
     res = bio.read()
 
-    f = open(dest_path, 'wb')
+    f = open('r.{}.{}.mca.fixed'.format(region.x, region.z), 'wb')
     f.write(res)
     f.close()
 
     bio.close()
     buf.close()
 
+
 def parse_region_data(header, region_data, region):
     chunks = []
     locations = []
     timestamps = []
 
-    reg_x = int(region[0]) * 32
-    reg_z = int(region[1]) * 32
+    reg_x = int(region.x) * 32
+    reg_z = int(region.z) * 32
 
     location_tuples = [
             Chunk(x, z)
@@ -100,7 +110,7 @@ def parse_region_data(header, region_data, region):
 
     temp_header = bytes(header[0:8192])
     temp_chunk_data = bytes(region_data)
-    total_size = 8192 # at least header present
+    total_size = 8192  # at least header present
 
     for coords in location_tuples:
         chunk = Chunk._make(coords)
@@ -116,13 +126,19 @@ def parse_region_data(header, region_data, region):
                 chunk,
                 {'loc': chunk_loc_data, 'ts': chunk_ts_data}
         )
-        
+
         total_size += chunk_data['sectors'] * 4096
         chunks.append(chunk_data)
 
-    res = {'locations': locations, 'timestamps': timestamps, 'chunks': chunks, 'approx_size': total_size}
+    res = {
+            'locations': locations,
+            'timestamps': timestamps,
+            'chunks': chunks,
+            'approx_size': total_size
+    }
 
     return res
+
 
 def get_chunk_data(region_data, chunk, info):
     # max chunk size 1MB, each sector being 4KB, max sectors is 256
@@ -188,7 +204,8 @@ def get_timestamp_data(header, chunk):
 
 
 def get_location_data(header, chunk):
-    int_offset =  ((chunk.x & 0x1f) + (chunk.z & 0x1f) * 32)  * 4 #region_math.get_chunk_location(chunk.x, chunk.z)
+    # region_math.get_chunk_location(chunk.x, chunk.z)
+    int_offset = ((chunk.x & 0x1f) + (chunk.z & 0x1f) * 32) * 4
 
     b0 = header[int_offset+0]
     b1 = header[int_offset+1]
