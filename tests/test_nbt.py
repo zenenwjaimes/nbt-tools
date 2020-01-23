@@ -2,22 +2,19 @@
 """
 NBT reading
 """
-import pytest
 from nbt_tools.nbt import *
 from nbt_tools.nbt import main as nbt
 from nbt_tools.region import main as region
 from distutils import dir_util
 from pytest import fixture
-import json
 import io
-import gzip
 import os
 import pprint
-import zlib
 
 __author__ = "zenen jaimes"
 __copyright__ = "zenen jaimes"
 __license__ = "mit"
+
 
 @fixture
 def datadir(tmpdir, request):
@@ -57,11 +54,10 @@ def test_nbt_data_is_list(datadir):
     nbt_path = datadir.join("nbt_test.dat")
     nbt_data = nbt.unpack_nbt_file(nbt_path)
 
-    assert type(nbt_data) is list 
+    assert type(nbt_data) is list
 
 
 def test_nbt_int_tag(datadir):
-    data = []
     raw_bytes = bytes.fromhex('03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80')
     nbt_data = nbt.read_nbt_bytes(raw_bytes)
 
@@ -72,7 +68,6 @@ def test_nbt_int_tag(datadir):
 
 
 def test_nbt_root_tag(datadir):
-    data = []
     nbt_path = datadir.join("nbt_test.dat")
     nbt_data = nbt.unpack_nbt_file(nbt_path)
 
@@ -278,9 +273,6 @@ def test_multiple_tag_data_to_compound():
     output += '56 65 72 73 69 6f 6e 00 00 08 b5 00'
 
     expected_output = bytes.fromhex(output)
-    
-    #print(nbt_data.hex(' '))
-    #print(expected_output.hex(' '))
 
     assert nbt_data == expected_output, "compound data is not equal"
 
@@ -334,13 +326,13 @@ def test_list_tag_data_with_compound_tags():
 
     nbt_data = nbt.write_tag(buf, data)
 
-    output = '09 00 0D 41 63 74 69 76 65 45 66 66 65 63 74 73 ' #compound
-    output += '0A 00 00 00 01 01 00 07 41 6D 62 69 65 6E 74 00 ' #ambient
-    output += '01 00 08 53 68 6F 77 49 63 6F 6E 01 ' #showicon
-    output += '01 00 0D 53 68 6F 77 50 61 72 74 69 63 6C 65 73 00 ' #showpart
-    output += '03 00 08 44 75 72 61 74 69 6F 6E 00 00 00 C8 ' #duration
-    output += '01 00 02 49 64 0D ' #id
-    output += '01 00 09 41 6D 70 6C 69 66 69 65 72 00 00' #amp + end tag
+    output = '09 00 0D 41 63 74 69 76 65 45 66 66 65 63 74 73 '  # compound
+    output += '0A 00 00 00 01 01 00 07 41 6D 62 69 65 6E 74 00 '  # ambient
+    output += '01 00 08 53 68 6F 77 49 63 6F 6E 01 '  # showicon
+    output += '01 00 0D 53 68 6F 77 50 61 72 74 69 63 6C 65 73 00 '  # showpart
+    output += '03 00 08 44 75 72 61 74 69 6F 6E 00 00 00 C8 '  # duration
+    output += '01 00 02 49 64 0D '  # id
+    output += '01 00 09 41 6D 70 6C 69 66 69 65 72 00 00'  # amp + end tag
 
     expected_output = bytes.fromhex(output)
 
@@ -372,20 +364,19 @@ def test_region_file_read(datadir):
 
     lines = []
 
-    nbt_path = datadir.join('r.2.1.mca')
+    nbt_path = datadir.join('r.-7.0.mca')
     with open(nbt_path,'r') as inf:
         for line in inf:
             lines.append(line)
 
     dirty_data = eval(''.join(lines))
-    chunks = dirty_data['chunks']
-    region.save_region('r.2.1.mca', dirty_data)
+    region.save_region('region', 'r.-7.0.mca', dirty_data)
 
     #nbt_data = region.load_region(str(nbt_path))
     #import sys
-    #sys.stdout = open('/tmp/output', 'w')
-    #print(nbt_data)
-    #sys.stdout.close()
-    #sys.stdout = sys.__stdout__
+    #import pprint
+    #stream = open('/tmp/output', 'w')
+    #pprint.pprint(nbt_data, width=160, indent=1, compact=True, sort_dicts=False, stream=stream)
+    #stream.close()
 
     assert False
