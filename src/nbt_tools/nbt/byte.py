@@ -10,10 +10,11 @@ def read(buf):
 
     return nbt.to_byte(data)
 
+
 def write(data):
     tag_header = nbt.get_tag_header(data)
     res = b''.join([
-            nbt.get_tag_header(data),
+            tag_header,
             bytes(data['tag_name'], 'utf-8'),
             int(
                 data['value']).to_bytes(
@@ -23,4 +24,4 @@ def write(data):
                 )
     ])
 
-    return res 
+    return res

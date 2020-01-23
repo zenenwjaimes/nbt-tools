@@ -21,4 +21,4 @@ def write(data):
             struct.pack(">f", data['value'])
     ])
 
-    return res 
+    return res

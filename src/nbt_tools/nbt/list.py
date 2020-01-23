@@ -60,8 +60,8 @@ def write(data):
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
-            int(internal_type).to_bytes(1, byteorder='big'), #tagId
-            int(payload_size).to_bytes(4, byteorder='big'), #payload size
+            int(internal_type).to_bytes(1, byteorder='big'),  # tagId
+            int(payload_size).to_bytes(4, byteorder='big'),  # payload size
             b''.join(list_output)
     ])
 
