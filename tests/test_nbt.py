@@ -379,7 +379,7 @@ def test_region_file_read(datadir):
 
     dirty_data = eval(''.join(lines))
     chunks = dirty_data['chunks']
-    region.save_region('/home/***REMOVED***/r.2.1.mca', dirty_data)
+    region.save_region('r.2.1.mca', dirty_data)
 
     #nbt_data = region.load_region(str(nbt_path))
     #import sys
