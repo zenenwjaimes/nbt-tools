@@ -36,27 +36,29 @@ def load_region(filename, debug=False):
     return data
 
 
-def save_region(filename, nbt_data):
+def save_region(dest_path, filename, nbt_data):
     region = filename_to_region_coords(filename)
     bio = io.BytesIO()
-    buf = io.BufferedWriter(bio, nbt_data['approx_size'])
-    i = 0
+    buf = io.BufferedWriter(bio)
 
     # write chunk location
+    header = []
     for loc in nbt_data['locations']:
-        buf.seek(i)
         tree_fitty = struct.pack(">I", loc['offset'])
         offset = tree_fitty[-3:]
         sectors = struct.pack('>b', loc['sectors'])
 
-        buf.write(offset)
-        buf.write(sectors)
+        header.append(offset)
+        header.append(sectors)
 
-        i += 4
+    buf.write(b''.join(header))
 
     # write chunk timestamps
+    timestamps = []
     for ts in nbt_data['timestamps']:
-        buf.write(struct.pack('>i', ts['ts']))  # timestamps
+        timestamps.append(struct.pack('>i', ts['ts']))
+
+    buf.write(b''.join(timestamps))
 
     for chunk_data in nbt_data['chunks']:
         # write chunk data...
@@ -76,9 +78,6 @@ def save_region(filename, nbt_data):
         buf.seek(chunk_data['offset'])
         buf.write(b_enc)
 
-        padding = (math.ceil(len(b_enc)/4096)*4096) - len(b_enc)
-        buf.write(b'\x00' * padding)
-
         _i.close()
         _b.close()
 
@@ -87,7 +86,11 @@ def save_region(filename, nbt_data):
 
     res = bio.read()
 
-    f = open('/tmp/r.{}.{}.mca.fixed'.format(region.x, region.z), 'wb')
+    # TODO: Fix this hack. There's a problem with going over
+    padding = (math.ceil(len(res)/4096)*4096) - len(res)
+    buf.write(b'\x00' * padding)
+
+    f = open('{}/r.{}.{}.mca'.format(dest_path, region.x, region.z), 'wb')
     f.write(res)
     f.close()
 
@@ -180,7 +183,7 @@ def get_chunk_data(region_data, chunk, info):
     zPos = nbt.get_tag_node(['', 'Level', 'zPos'], chunky)
 
     return {
-            'data': b'', # chunk_data,
+            'data': b'',  # chunk_data,
             'chunk': chunky,
             'x': xPos['value'],
             'z': zPos['value'],
@@ -205,8 +208,7 @@ def get_timestamp_data(header, chunk):
 
 
 def get_location_data(header, chunk):
-    # region_math.get_chunk_location(chunk.x, chunk.z)
-    int_offset = ((chunk.x & 0x1f) + (chunk.z & 0x1f) * 32) * 4
+    int_offset = region_math.get_chunk_location(chunk.x, chunk.z)
 
     b0 = header[int_offset+0]
     b1 = header[int_offset+1]
