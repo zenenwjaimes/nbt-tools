@@ -17,6 +17,8 @@ def filename_to_region_coords(filename):
                 .replace('r.', '')
                 .replace('.mca', '')
                 .replace('.old', '')
+                .replace('.end', '')
+                .replace('.nether', '')
                 .replace('.', ',')
                 .split(',')
             )
@@ -96,6 +98,26 @@ def save_region(dest_path, filename, nbt_data):
 
     bio.close()
     buf.close()
+
+
+def relocate_region(offset, nbt_data):
+    for chunk in nbt_data['chunks']:
+        # clear entities for now
+        entities = nbt.get_tag_node(['', 'Level', 'Entities'], chunk['chunk'])
+        if entities is not False:
+            entities['value']['value'] = []
+
+
+        tile_entities = nbt.get_tag_node(['', 'Level', 'TileEntities'], chunk['chunk'])
+        if tile_entities is not False:
+            tile_entities['value']['value'] = []
+
+        # move chunks to new offset 
+        x_pos = nbt.get_tag_node(['', 'Level', 'xPos'], chunk['chunk'])
+        z_pos = nbt.get_tag_node(['', 'Level', 'zPos'], chunk['chunk'])
+
+        x_pos['value'] += (offset[0] * 32)
+        z_pos['value'] += (offset[1] * 32)
 
 
 def parse_region_data(header, region_data, region):

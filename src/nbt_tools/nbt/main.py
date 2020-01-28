@@ -3,6 +3,7 @@ import importlib
 import io
 import struct
 from enum import Enum
+from collections.abc import Iterable
 
 """
 TAG Format
@@ -31,36 +32,49 @@ class TAG(Enum):
     Long_Array = 0xC
 
 
-def to_byte(byte):
-    return struct.unpack('>b', byte)[0]
+def to_byte(byte, size=1):
+    _bytes = struct.unpack('>{}b'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_byte(i):
-    return struct.pack('>b', i)
+def to_byte_byte(i, size=1):
+    return struct.pack(
+            '>{}b'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
-def to_short(byte):
-    return struct.unpack('>h', byte)[0]
+def to_short(byte, size=1):
+    _bytes = struct.unpack('>{}h'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
 def to_byte_short(i):
     return struct.pack('>h', i)
 
 
-def to_int(byte):
-    return struct.unpack('>i', byte)[0]
+def to_int(byte, size=1):
+    _bytes = struct.unpack('>{}i'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_int(i):
-    return struct.pack('>i', i)
+def to_byte_int(i, size=1):
+    return struct.pack(
+            '>{}i'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
-def to_long(byte):
-    return struct.unpack('>q', byte)[0]
+def to_long(byte, size=1):
+    _bytes = struct.unpack('>{}q'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_long(i):
-    return struct.pack('>q', i)
+def to_byte_long(i, size=1):
+    return struct.pack(
+            '>{}q'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
 def read_nbt_bytes(byte_data):
