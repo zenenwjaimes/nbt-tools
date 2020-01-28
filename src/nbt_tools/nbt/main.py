@@ -178,7 +178,6 @@ def tag_type_int(_type) -> int:
 
 def tag_name(buf) -> str:
     length = struct.unpack('>H', buf.read(2))
-
     tag_name = buf.read(length[0]) if length[0] > 0 else b''
 
     return tag_name.decode("utf-8")
