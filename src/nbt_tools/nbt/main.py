@@ -31,6 +31,22 @@ class TAG(Enum):
     Int_Array = 0xB
     Long_Array = 0xC
 
+tags = [
+    'End', # 0x0
+    'Byte', # 0x1
+    'Short', # 0x2
+    'Int', # 0x3
+    'Long', # 0x4
+    'Float', # 0x5
+    'Double', # 0x6
+    'Byte_Array', # 0x7
+    'String', # 0x8
+    'List', # 0x9
+    'Compound', # 0xA
+    'Int_Array', # 0xB
+    'Long_Array' # 0xC
+]
+
 
 def to_byte(byte, size=1):
     _bytes = struct.unpack('>{}b'.format(size), byte)
@@ -153,13 +169,14 @@ def pretty_print_nbt_data(nbt_data, indent=0):
 
 
 def tag_type(_type) -> str:
-    _tag_type = _type if _type != b'' else b'\x00'
-    return TAG(to_byte(_tag_type) if type(_tag_type) is bytes else _tag_type)
+    return tags[_type]
+
+
+def tag_type_int(_type) -> int:
+    return tags.index(_type)
 
 
 def tag_name(buf) -> str:
-    #length_big_byte = to_byte(buf.read(1)) << 8
-    #length_small_byte = to_byte(buf.read(1))
     length = struct.unpack('>H', buf.read(2))
 
     tag_name = buf.read(length[0]) if length[0] > 0 else b''
@@ -168,21 +185,21 @@ def tag_name(buf) -> str:
 
 
 def tag_data(tag, buf, skip_read=False):
-    if tag == TAG.End:
+    if tag == 'END':
         return {'name': 'end', 'tag': TAG.End, 'fn': 'end'}
 
-    name = tag_name(buf) if tag.value != TAG.End.value else ''
-    fn = tag.name.lower()
+    name = tag_name(buf) if tag != 'End' else ''
+    fn = tag.lower()
 
     return {'name': name, 'tag': tag, 'fn': fn}
 
 
 def read_tag(buf, mutdata, only_once=False):
     _type = buf.read(1)
-    tag = tag_type(_type)
+    tag = tag_type(int.from_bytes(_type, byteorder='big'))
 
     # eof
-    if tag == TAG.End:
+    if tag == 'End':
         return
 
     data = tag_data(tag, buf)
@@ -193,7 +210,7 @@ def read_tag(buf, mutdata, only_once=False):
 
         mutdata.append({
             'tag_name': data['name'],
-            'type': tag.value,
+            'type': tag,
             'value': val
         })
 
@@ -204,11 +221,10 @@ def read_tag(buf, mutdata, only_once=False):
 def write_tag(buf, data):
     if 'type' not in data and type(data) is list:
         return write_tag(buf, data[0])
+    
+    tag_type = data['type']
 
-    _type = data['type']
-    tag = tag_type(_type)
-
-    tag_writer = get_tag_writer(tag)
+    tag_writer = get_tag_writer(tag_type)
     res = tag_writer(data)
     buf.write(res)
 
@@ -221,18 +237,18 @@ def get_tag_header(data):
         return b''
 
     return b''.join([
-        int(data['type']).to_bytes(1, byteorder='big'),
+        int(tags.index(data['type'])).to_bytes(1, byteorder='big'),
         int(len(data['tag_name'])).to_bytes(2, byteorder='big')
     ])
 
 
 def get_tag_reader(tag):
-    mod = get_nbt_fn(tag.name.lower())
+    mod = get_nbt_fn(tag.lower())
     return getattr(mod, 'read')
 
 
 def get_tag_writer(tag):
-    mod = get_nbt_fn(tag.name.lower())
+    mod = get_nbt_fn(tag.lower())
     return getattr(mod, 'write')
 
 

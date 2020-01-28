@@ -11,12 +11,13 @@ def byte_length_payload_size() -> int:
 
 def read(buf):
     # list of type tag_id (byte, int, compound, string, etc)
-    tag_type = nbt.tag_type(buf.read(byte_length()))
+    _type = int.from_bytes(buf.read(byte_length()), byteorder='big')
+    tag_type = nbt.tag_type(_type)
     list_size = buf.read(byte_length_payload_size())
     payload_size = nbt.to_int(list_size)
     tags = []
 
-    if tag_type.value == nbt.TAG.Compound.value:
+    if tag_type == 'Compound':
         for i in range(payload_size):
             newdata = []
             nbt.read_tag(buf, newdata)
@@ -28,7 +29,7 @@ def read(buf):
             val = tag_reader(buf)
             tags.append(val)
 
-    return {'value': tags, 'type': tag_type.value}
+    return {'value': tags, 'type': tag_type}
 
 
 def write(data):
@@ -38,7 +39,7 @@ def write(data):
     payload_size = 0
 
     if type(list_data) is list:
-        internal_type = nbt.TAG.Compound.value
+        internal_type = 0xA #  Compound Type
         payload_size = len(list_data)
 
         for tag in list_data:
@@ -48,10 +49,10 @@ def write(data):
             list_output.append(tag_writer(tag, True))
 
     else:
-        tag_type = nbt.tag_type(list_data['type'])
+        tag_type = list_data['type']
         tag_writer = nbt.get_tag_writer(tag_type)
 
-        internal_type = data['value']['type']
+        internal_type = nbt.tag_type_int(data['value']['type'])
         payload_size = len(data['value']['value'])
 
         for tag in list_data['value']:

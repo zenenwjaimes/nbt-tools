@@ -15,10 +15,10 @@ def read(buf):
 def write(data, list_type=False):
     list_data = data['value']
     list_output = []
-    end_tag = nbt.get_tag_writer(nbt.tag_type(nbt.TAG.End))({})
+    end_tag = nbt.get_tag_writer('End')({})
 
     for tag in list_data:
-        tag_type = nbt.tag_type(tag['type'])
+        tag_type = nbt.tag_type(tag['type']) if isinstance(tag['type'], int) else tag['type']
         tag_writer = nbt.get_tag_writer(tag_type)
 
         list_output.append(tag_writer(tag))
