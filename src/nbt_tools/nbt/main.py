@@ -14,7 +14,7 @@ TAG Format
 x-: Tag Data
 
 """
-
+imports = {}
 
 class TAG(Enum):
     End = 0x0
@@ -237,7 +237,13 @@ def get_tag_writer(tag):
 
 
 def get_nbt_fn(fn):
-    return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))
+    gen_fn = 'nbt_tools.nbt.{0}'.format(fn)
+
+    if gen_fn not in imports:
+        new_fn = importlib.import_module(gen_fn)
+        imports[gen_fn] = new_fn
+
+    return imports[gen_fn]
 
 
 def get_tag_node(path, nbt_data):
