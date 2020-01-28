@@ -12,25 +12,28 @@ def read(buf):
     _size = (data[0] << 24) | (data[1] << 16) | (data[2] << 8) | data[3]
 
     values = []
+    ready = buf.read(_size * 4)
 
-    for i in range(_size):
-        val = intb.read(buf)
-        values.append(val)
+    if _size > 1:
+        values = nbt.to_int(ready, _size)
+    elif _size == 1:
+        values = [nbt.to_int(ready, _size)]
+    else:
+        values = []
 
-    return {'size': _size, 'value': values, 'size_bytes': 4}
+    return {'size': _size, 'value': list(values), 'size_bytes': 4}
 
 
 def write(data):
+    arr = data['value']['value']
+    packed = nbt.to_byte_int(arr, len(arr))
+
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),
             # payload size
             int(len(data['value']['value'])).to_bytes(4, byteorder='big'),
-            b''.join(longs_to_bytes(data['value']['value']))
+            packed
     ])
 
     return res
-
-
-def longs_to_bytes(vals):
-    return list(map(lambda val: struct.pack('>i', val), vals))

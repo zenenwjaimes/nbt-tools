@@ -5,8 +5,10 @@ NBT reading
 from nbt_tools.nbt import *
 from nbt_tools.nbt import main as nbt
 from nbt_tools.region import main as region
+from nbt_tools.region import math as region_math
 from distutils import dir_util
 from pytest import fixture
+import ast
 import io
 import os
 import pprint
@@ -61,7 +63,7 @@ def test_nbt_int_tag(datadir):
     raw_bytes = bytes.fromhex('03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80')
     nbt_data = nbt.read_nbt_bytes(raw_bytes)
 
-    assert nbt_data[0]['type'] == nbt.TAG.Int.value, \
+    assert nbt_data[0]['type'] == 'Int', \
             "tag isn't an INT tag"
     assert len(nbt_data[0]['tag_name']) == 0x07, "tag length isn't 07"
     assert nbt_data[0]['tag_name'] == 'zCenter', "tag name isn't zCenter"
@@ -71,7 +73,7 @@ def test_nbt_root_tag(datadir):
     nbt_path = datadir.join("nbt_test.dat")
     nbt_data = nbt.unpack_nbt_file(nbt_path)
 
-    assert nbt_data[0]['type'] == nbt.TAG.Compound.value, \
+    assert nbt_data[0]['type'] == 'Compound', \
             "tag isn't compound tag"
     assert nbt_data[0]['tag_name'] == "", \
             "compound tag name to start file isn't empty, which is root"
@@ -80,7 +82,7 @@ def test_nbt_root_tag(datadir):
 def test_tag_data_to_bytes():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'unlimitedTracking', 'value': 0, 'type': 1}
+    data = {'tag_name': 'unlimitedTracking', 'value': 0, 'type': 'Byte'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '01 00 11 75 6E 6C 69 6D 69 74 65 64 54 72 61 63 6B 69 6E 67 00'
@@ -92,7 +94,7 @@ def test_tag_data_to_bytes():
 def test_tag_data_to_int():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'zCenter', 'value': -3200, 'type': 3}
+    data = {'tag_name': 'zCenter', 'value': -3200, 'type': 'Int'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '03 00 07 7A 43 65 6E 74 65 72 FF FF F3 80'
@@ -104,7 +106,7 @@ def test_tag_data_to_int():
 def test_tag_data_to_double():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'BorderCenterZ', 'value': 0, 'type': 6}
+    data = {'tag_name': 'BorderCenterZ', 'value': 0, 'type': 'Double'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '06 00 0D 42 6F 72 64 65 72 43 65 6E 74 65 72 5A 00 00 00 00 00 00 00 00'
@@ -116,7 +118,11 @@ def test_tag_data_to_double():
 def test_tag_data_to_float():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'walkSpeed', 'value': 0.10000000149011612, 'type': 5}
+    data = {
+            'tag_name': 'walkSpeed',
+            'value': 0.10000000149011612,
+            'type': 'Float'
+    }
 
     nbt_data = nbt.write_tag(buf, data)
     output = '05 00 09 77 61 6C 6B 53 70 65 65 64 3D CC CC CD'
@@ -128,7 +134,11 @@ def test_tag_data_to_float():
 def test_tag_data_to_short():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'Fire', 'value': -20, 'type': 2}
+    data = {
+            'tag_name': 'Fire',
+            'value': -20,
+            'type': 'Short'
+    }
 
     nbt_data = nbt.write_tag(buf, data)
     output = '02 00 04 46 69 72 65 FF EC'
@@ -140,7 +150,11 @@ def test_tag_data_to_short():
 def test_tag_data_to_long():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'UUIDLeast', 'value': -8713279898927853564, 'type': 4}
+    data = {
+            'tag_name': 'UUIDLeast',
+            'value': -8713279898927853564,
+            'type': 'Long'
+    }
 
     nbt_data = nbt.write_tag(buf, data)
     output = '04 00 09 55 55 49 44 4C 65 61 73 74 87 14 36 18 CB DA 90 04'
@@ -154,7 +168,7 @@ def test_tag_data_to_byte_array():
     buf = io.BufferedWriter(bio)
 
     colors = {'size': 2, 'size_bytes': 1, 'value': [0x01, 0x55]}
-    data = {'tag_name': 'colors', 'value': colors, 'type': 7}
+    data = {'tag_name': 'colors', 'value': colors, 'type': 'Byte_Array'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '07 00 06 63 6F 6C 6F 72 73 00 00 00 02 01 55'
@@ -170,7 +184,11 @@ def test_tag_data_to_long_array():
     buf = io.BufferedWriter(bio)
 
     block_states = {'size': 3, 'size_bytes': 8, 'value': [1229782938247303441, 1229782938247303441, 1229782938532516113]}
-    data = {'tag_name': 'BlockStates', 'value': block_states, 'type': 12}
+    data = {
+            'tag_name': 'BlockStates',
+            'value': block_states,
+            'type': 'Long_Array'
+    }
 
     nbt_data = nbt.write_tag(buf, data)
     output = '0C 00 0B 42 6C 6F 63 6B 53 74 61 74 65 73 00 00 00 03 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 11 22 11 11 11'
@@ -189,7 +207,7 @@ def test_tag_data_to_int_array():
     # 5: Taiga
     # 19: Taiga Hills
     biomes = {'size': 4, 'size_bytes': 4, 'value': [45, 45, 5, 19]}
-    data = {'tag_name': 'Biomes', 'value': biomes, 'type': 11}
+    data = {'tag_name': 'Biomes', 'value': biomes, 'type': 'Int_Array'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '0B 00 06 42 69 6F 6D 65 73 00 00 00 04 00 00 00 2D 00 00 00 2D 00 00 00 05 00 00 00 13'
@@ -203,7 +221,11 @@ def test_tag_data_to_int_array():
 def test_tag_data_to_string():
     bio = io.BytesIO()
     buf = io.BufferedWriter(bio)
-    data = {'tag_name': 'WanderingTraderId', 'value': '26f2a721-4d4e-4595-a1ee-0b259d814d20', 'type': 8}
+    data = {
+            'tag_name': 'WanderingTraderId',
+            'value': '26f2a721-4d4e-4595-a1ee-0b259d814d20',
+            'type': 'String'
+    }
 
     nbt_data = nbt.write_tag(buf, data)
     output = '08 00 11 57 61 6E 64 65 72 69 6E 67 54 72 61 64 65 72 49 64 00 24 32 36 66 32 61 37 32 31 2D 34 64 34 65 2D 34 35 39 35 2D 61 31 65 65 2D 30 62 32 35 39 64 38 31 34 64 32 30'
@@ -217,8 +239,8 @@ def test_scalar_type_tag_data_to_list():
     buf = io.BufferedWriter(bio)
     rots = [-128.2454833984375, 16.366594314575195]
     # list of type float with 2 items
-    list_data = {'value': rots, 'type': 5}
-    data = {'tag_name': 'Rotation', 'value': list_data, 'type': 9}
+    list_data = {'value': rots, 'type': 'Float'}
+    data = {'tag_name': 'Rotation', 'value': list_data, 'type': 'List'}
 
     nbt_data = nbt.write_tag(buf, data)
     output = '09 00 08 52 6F 74 61 74 69 6F 6E 05 00 00 00 02 C3 00 3E D8 41 82 EE C9'
@@ -233,32 +255,32 @@ def test_multiple_tag_data_to_compound():
 
     data = {
                 'tag_name': '',
-                'type': 10,
+                'type': 'Compound',
                 'value': [
                     {
                         'tag_name': 'data',
-                        'type': 10,
+                        'type': 'Compound',
                         'value': [
                             {
                                 'tag_name': 'Raids',
-                                'type': 9,
-                                'value': {'type': 0, 'value': []}
+                                'type': 'List',
+                                'value': {'type': 'End', 'value': []}
                             },
                            {
                                 'tag_name': 'NextAvailableID',
-                                'type': 3,
+                                'type': 'Int',
                                 'value': 8
                             },
                            {
                                 'tag_name': 'Tick',
-                                'type': 3,
+                                'type': 'Int',
                                 'value': 25474854
                             }
                         ]
                     },
                     {
                         'tag_name': 'DataVersion',
-                        'type': 3,
+                        'type': 'Int',
                         'value': 2229
                     }
                 ]
@@ -283,40 +305,40 @@ def test_list_tag_data_with_compound_tags():
 
     data = {
                 'tag_name': 'ActiveEffects',
-                'type': 9,
+                'type': 'List',
                 'value': [
                     {
                         'tag_name': '',
-                        'type': 10,
+                        'type': 0xA,
                         'value': [
                             {
                                 'tag_name': 'Ambient',
-                                'type': 1,
+                                'type': 'Byte',
                                 'value': 0
                             },
                             {
                                 'tag_name': 'ShowIcon',
-                                'type': 1,
+                                'type': 'Byte',
                                 'value': 1
                             },
                             {
                                 'tag_name': 'ShowParticles',
-                                'type': 1,
+                                'type': 'Byte',
                                 'value': 0
                             },
                            {
                                 'tag_name': 'Duration',
-                                'type': 3,
+                                'type': 'Int',
                                 'value': 200
                             },
                            {
                                 'tag_name': 'Id',
-                                'type': 1,
+                                'type': 'Byte',
                                 'value': 13
                             },
                            {
                                 'tag_name': 'Amplifier',
-                                'type': 1,
+                                'type': 'Byte',
                                 'value': 0
                             }
                         ]
@@ -358,25 +380,20 @@ def test_list_tag_data_with_compound_tags():
 #    assert False
 
 
-def test_region_file_read(datadir):
-    bio = io.BytesIO()
-    buf = io.BufferedWriter(bio)
+def test_region_file_offset(datadir):
+    import cProfile
 
-    lines = []
+    with cProfile.Profile() as  pr:
+        bio = io.BytesIO()
+        buf = io.BufferedWriter(bio)
 
-    nbt_path = datadir.join('r.-7.0.mca')
-    with open(nbt_path,'r') as inf:
-        for line in inf:
-            lines.append(line)
+        lines = ''
 
-    dirty_data = eval(''.join(lines))
-    region.save_region('region', 'r.-7.0.mca', dirty_data)
-
-    #nbt_data = region.load_region(str(nbt_path))
-    #import sys
-    #import pprint
-    #stream = open('/tmp/output', 'w')
-    #pprint.pprint(nbt_data, width=160, indent=1, compact=True, sort_dicts=False, stream=stream)
-    #stream.close()
+        nbt_path = datadir.join('r.0.0.mca.old')
+        nbt_data = region.load_region(str(nbt_path))
+        offset = region_math.coord_to_region(8192, 8192)
+        region.relocate_region(offset, nbt_data)
+        region.save_region('region', 'r.16.16.mca', nbt_data)
+    pr.print_stats()
 
     assert False

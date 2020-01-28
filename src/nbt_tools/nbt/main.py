@@ -3,6 +3,7 @@ import importlib
 import io
 import struct
 from enum import Enum
+from collections.abc import Iterable
 
 """
 TAG Format
@@ -13,7 +14,7 @@ TAG Format
 x-: Tag Data
 
 """
-
+imports = {}
 
 class TAG(Enum):
     End = 0x0
@@ -30,37 +31,66 @@ class TAG(Enum):
     Int_Array = 0xB
     Long_Array = 0xC
 
+tags = [
+    'End', # 0x0
+    'Byte', # 0x1
+    'Short', # 0x2
+    'Int', # 0x3
+    'Long', # 0x4
+    'Float', # 0x5
+    'Double', # 0x6
+    'Byte_Array', # 0x7
+    'String', # 0x8
+    'List', # 0x9
+    'Compound', # 0xA
+    'Int_Array', # 0xB
+    'Long_Array' # 0xC
+]
 
-def to_byte(byte):
-    return struct.unpack('>b', byte)[0]
+
+def to_byte(byte, size=1):
+    _bytes = struct.unpack('>{}b'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_byte(i):
-    return struct.pack('>b', i)
+def to_byte_byte(i, size=1):
+    return struct.pack(
+            '>{}b'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
-def to_short(byte):
-    return struct.unpack('>h', byte)[0]
+def to_short(byte, size=1):
+    _bytes = struct.unpack('>{}h'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
 def to_byte_short(i):
     return struct.pack('>h', i)
 
 
-def to_int(byte):
-    return struct.unpack('>i', byte)[0]
+def to_int(byte, size=1):
+    _bytes = struct.unpack('>{}i'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_int(i):
-    return struct.pack('>i', i)
+def to_byte_int(i, size=1):
+    return struct.pack(
+            '>{}i'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
-def to_long(byte):
-    return struct.unpack('>q', byte)[0]
+def to_long(byte, size=1):
+    _bytes = struct.unpack('>{}q'.format(size), byte)
+    return _bytes if len(_bytes) > 1 else _bytes[0]
 
 
-def to_byte_long(i):
-    return struct.pack('>q', i)
+def to_byte_long(i, size=1):
+    return struct.pack(
+            '>{}q'.format(size),
+            *i if isinstance(i, Iterable) else [i]
+        )
 
 
 def read_nbt_bytes(byte_data):
@@ -139,36 +169,36 @@ def pretty_print_nbt_data(nbt_data, indent=0):
 
 
 def tag_type(_type) -> str:
-    _tag_type = _type if _type != b'' else b'\x00'
-    return TAG(to_byte(_tag_type) if type(_tag_type) is bytes else _tag_type)
+    return tags[_type]
+
+
+def tag_type_int(_type) -> int:
+    return tags.index(_type)
 
 
 def tag_name(buf) -> str:
-    length_big_byte = to_byte(buf.read(1)) << 8
-    length_small_byte = to_byte(buf.read(1))
-
-    length = length_big_byte | length_small_byte
-    tag_name = buf.read(length) if length > 0 else b''
+    length = struct.unpack('>H', buf.read(2))
+    tag_name = buf.read(length[0]) if length[0] > 0 else b''
 
     return tag_name.decode("utf-8")
 
 
 def tag_data(tag, buf, skip_read=False):
-    if tag == TAG.End:
+    if tag == 'END':
         return {'name': 'end', 'tag': TAG.End, 'fn': 'end'}
 
-    name = tag_name(buf) if tag.value != TAG.End.value else ''
-    fn = tag.name.lower()
+    name = tag_name(buf) if tag != 'End' else ''
+    fn = tag.lower()
 
     return {'name': name, 'tag': tag, 'fn': fn}
 
 
 def read_tag(buf, mutdata, only_once=False):
     _type = buf.read(1)
-    tag = tag_type(_type)
+    tag = tag_type(int.from_bytes(_type, byteorder='big'))
 
     # eof
-    if tag == TAG.End:
+    if tag == 'End':
         return
 
     data = tag_data(tag, buf)
@@ -179,7 +209,7 @@ def read_tag(buf, mutdata, only_once=False):
 
         mutdata.append({
             'tag_name': data['name'],
-            'type': tag.value,
+            'type': tag,
             'value': val
         })
 
@@ -190,11 +220,10 @@ def read_tag(buf, mutdata, only_once=False):
 def write_tag(buf, data):
     if 'type' not in data and type(data) is list:
         return write_tag(buf, data[0])
+    
+    tag_type = data['type']
 
-    _type = data['type']
-    tag = tag_type(_type)
-
-    tag_writer = get_tag_writer(tag)
+    tag_writer = get_tag_writer(tag_type)
     res = tag_writer(data)
     buf.write(res)
 
@@ -207,23 +236,29 @@ def get_tag_header(data):
         return b''
 
     return b''.join([
-        int(data['type']).to_bytes(1, byteorder='big'),
+        int(tags.index(data['type'])).to_bytes(1, byteorder='big'),
         int(len(data['tag_name'])).to_bytes(2, byteorder='big')
     ])
 
 
 def get_tag_reader(tag):
-    mod = get_nbt_fn(tag.name.lower())
+    mod = get_nbt_fn(tag.lower())
     return getattr(mod, 'read')
 
 
 def get_tag_writer(tag):
-    mod = get_nbt_fn(tag.name.lower())
+    mod = get_nbt_fn(tag.lower())
     return getattr(mod, 'write')
 
 
 def get_nbt_fn(fn):
-    return importlib.import_module('nbt_tools.nbt.{0}'.format(fn))
+    gen_fn = 'nbt_tools.nbt.{0}'.format(fn)
+
+    if gen_fn not in imports:
+        new_fn = importlib.import_module(gen_fn)
+        imports[gen_fn] = new_fn
+
+    return imports[gen_fn]
 
 
 def get_tag_node(path, nbt_data):

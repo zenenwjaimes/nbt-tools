@@ -17,6 +17,8 @@ def filename_to_region_coords(filename):
                 .replace('r.', '')
                 .replace('.mca', '')
                 .replace('.old', '')
+                .replace('.end', '')
+                .replace('.nether', '')
                 .replace('.', ',')
                 .split(',')
             )
@@ -96,6 +98,40 @@ def save_region(dest_path, filename, nbt_data):
 
     bio.close()
     buf.close()
+
+
+def relocate_region(offset, nbt_data):
+    coord_offset = region_math.region_to_coord(*offset)
+
+    for chunk in nbt_data['chunks']:
+        # clear entities for now
+        entities = nbt.get_tag_node(['', 'Level', 'Entities'], chunk['chunk'])
+        if entities is not False:
+            #entities['value']['value'] = []
+            for entity in entities['value']['value']:
+                pos = nbt.get_tag_node(['Pos'], entity) 
+
+                if pos is not False:
+                    pos_list = pos['value']['value']
+                    pos_list[0] += coord_offset[0]
+                    pos_list[2] += coord_offset[1]
+                    pos['value']['value'] = pos_list
+
+        tile_entities = nbt.get_tag_node(['', 'Level', 'TileEntities'], chunk['chunk'])
+        if tile_entities is not False:
+            for tile_entity in tile_entities['value']['value']:
+                x_pos = nbt.get_tag_node(['x'], tile_entity)
+                z_pos = nbt.get_tag_node(['z'], tile_entity)
+
+                x_pos['value'] += coord_offset[0]
+                z_pos['value'] += coord_offset[1]
+
+        # move chunks to new offset 
+        x_pos = nbt.get_tag_node(['', 'Level', 'xPos'], chunk['chunk'])
+        z_pos = nbt.get_tag_node(['', 'Level', 'zPos'], chunk['chunk'])
+
+        x_pos['value'] += (offset[0] * 32)
+        z_pos['value'] += (offset[1] * 32)
 
 
 def parse_region_data(header, region_data, region):
