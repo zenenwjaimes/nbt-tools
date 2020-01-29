@@ -226,7 +226,6 @@ def chunk_relocate(args):
 
     offset_coord = list(map(int, args.dest_point.split(',')))
     ranges = list(map(int, range1 + range2))
-    print(ranges)
 
     output_paths(ranges, offset_coord, args.src_path, args.dest_path)
 
