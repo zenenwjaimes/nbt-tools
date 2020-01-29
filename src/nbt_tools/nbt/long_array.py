@@ -27,8 +27,10 @@ def read(buf):
 # TODO: Validate all the values passed in to make sure they're longs
 def write(data):
     arr = data['value']['value']
-    packed = nbt.to_byte_long(arr, len(arr))
-
+    try:
+        packed = nbt.to_byte_long(arr, len(arr))
+    except:
+        print(arr)
     res = b''.join([
             nbt.get_tag_header(data),
             bytes(data['tag_name'], 'utf-8'),

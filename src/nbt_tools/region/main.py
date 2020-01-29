@@ -5,6 +5,7 @@ import io
 import struct
 import zlib
 import math
+import numpy as np
 
 Point = collections.namedtuple('Point', 'x y')
 Chunk = collections.namedtuple('Chunk', 'x z')
@@ -102,14 +103,11 @@ def save_region(dest_path, filename, nbt_data):
 
 def relocate_region(offset, nbt_data):
     coord_offset = region_math.region_to_coord(*offset)
-    print(coord_offset)
-    print(offset)
 
     for chunk in nbt_data['chunks']:
         if len(chunk['chunk']) == 0:
             continue
 
-        # clear entities for now
         entities = nbt.get_tag_node(['', 'Level', 'Entities'], chunk['chunk'])
         if entities is not False:
             #entities['value']['value'] = []
@@ -118,11 +116,9 @@ def relocate_region(offset, nbt_data):
 
                 if pos is not False:
                     pos_list = pos['value']['value']
-                    #print('e pos ({})'.format(pos_list))
                     pos_list[0] += coord_offset[0]
                     pos_list[2] += coord_offset[1]
                     pos['value']['value'] = pos_list
-                    #print('e pos after {}'.format(pos['value']['value']))
 
         tile_entities = nbt.get_tag_node(['', 'Level', 'TileEntities'], chunk['chunk'])
         if tile_entities is not False:
@@ -130,19 +126,88 @@ def relocate_region(offset, nbt_data):
                 x_pos = nbt.get_tag_node(['x'], tile_entity)
                 z_pos = nbt.get_tag_node(['z'], tile_entity)
 
-                #print('te from ({}, {})'.format(x_pos['value'], z_pos['value']))
                 x_pos['value'] += coord_offset[0]
                 z_pos['value'] += coord_offset[1]
-                #print('te to ({}, {})'.format(x_pos['value'], z_pos['value']))
+
+        structures = nbt.get_tag_node(
+                ['', 'Level', 'Structures', 'Starts'],
+                chunk['chunk']
+        )
+        references = nbt.get_tag_node(
+                ['', 'Level', 'Structures', 'References'],
+                chunk['chunk']
+        )
+
+        if references is not False:
+            import pprint
+
+            for reference in references['value']:
+                fixed = []
+
+                for struct_ref in reference['value']['value']:
+                    struct_ref_x = np.int32(struct_ref & 0xffffffff)
+                    struct_ref_z = np.int32((struct_ref >> 32) & 0xffffffff)
+                    
+                    struct_ref_x += offset[0] * 32
+                    struct_ref_z += offset[1] * 32
+
+                    mut_ref = np.int64((struct_ref_z << 32) | struct_ref_x)
+                    fixed.append(np.int64(mut_ref))
+
+                reference['value']['value'] = tuple(fixed)
+
+        if structures is not False:
+            for structure in structures['value']:
+                x_pos = nbt.get_tag_node(['ChunkX'], structure['value'])
+                z_pos = nbt.get_tag_node(['ChunkZ'], structure['value'])
+                bb_pos = nbt.get_tag_node(['BB'], structure['value'])
+                struct_children = nbt.get_tag_node(
+                        ['Children'],
+                        structure['value']
+                )
+
+                x_pos['value'] += offset[0] * 32
+                z_pos['value'] += offset[1] * 32
+
+                if bb_pos is not False:
+                    bb_positions = bb_pos['value']['value']
+                    # bounding box min x, z
+                    bb_positions[0] += coord_offset[0]
+                    bb_positions[2] += coord_offset[1]
+                    # bounding box max x, z
+                    bb_positions[3] += coord_offset[0]
+                    bb_positions[5] += coord_offset[1]
+
+                if struct_children is not False:
+                    for struct_child in struct_children['value']['value']:
+                        struct_bb = nbt.get_tag_node(['BB'], struct_child)
+                        entrances = nbt.get_tag_node(
+                                ['Entrances'],
+                                struct_child
+                        )
+
+                        if struct_bb is not False:
+                            struct_bb_pos = struct_bb['value']['value']
+                            # bounding box min x, z
+                            struct_bb_pos[0] += coord_offset[0]
+                            struct_bb_pos[2] += coord_offset[1]
+                            # bounding box max x, z
+                            struct_bb_pos[3] += coord_offset[0]
+                            struct_bb_pos[5] += coord_offset[1]
+                        if entrances is not False:
+                            for entrance in entrances['value']['value']:
+                                entrance['value'][0] += coord_offset[0]
+                                entrance['value'][2] += coord_offset[1]
+                                entrance['value'][3] += coord_offset[0]
+                                entrance['value'][5] += coord_offset[1]
 
         # move chunks to new offset 
         x_pos = nbt.get_tag_node(['', 'Level', 'xPos'], chunk['chunk'])
         z_pos = nbt.get_tag_node(['', 'Level', 'zPos'], chunk['chunk'])
-        #print('from ({}, {})'.format(x_pos['value'], z_pos['value']))
         x_pos['value'] += offset[0] * 32
         z_pos['value'] += offset[1] * 32
-        #print('to ({}, {})'.format(x_pos['value'], z_pos['value']))
 
+        structures = nbt.get_tag_node(['', 'Level', 'Structures', 'Starts'], chunk['chunk'])
 
 def parse_region_data(header, region_data, region):
     chunks = []
