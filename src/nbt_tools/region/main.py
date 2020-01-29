@@ -102,8 +102,13 @@ def save_region(dest_path, filename, nbt_data):
 
 def relocate_region(offset, nbt_data):
     coord_offset = region_math.region_to_coord(*offset)
+    print(coord_offset)
+    print(offset)
 
     for chunk in nbt_data['chunks']:
+        if len(chunk['chunk']) == 0:
+            continue
+
         # clear entities for now
         entities = nbt.get_tag_node(['', 'Level', 'Entities'], chunk['chunk'])
         if entities is not False:
@@ -113,9 +118,11 @@ def relocate_region(offset, nbt_data):
 
                 if pos is not False:
                     pos_list = pos['value']['value']
+                    #print('e pos ({})'.format(pos_list))
                     pos_list[0] += coord_offset[0]
                     pos_list[2] += coord_offset[1]
                     pos['value']['value'] = pos_list
+                    #print('e pos after {}'.format(pos['value']['value']))
 
         tile_entities = nbt.get_tag_node(['', 'Level', 'TileEntities'], chunk['chunk'])
         if tile_entities is not False:
@@ -123,15 +130,18 @@ def relocate_region(offset, nbt_data):
                 x_pos = nbt.get_tag_node(['x'], tile_entity)
                 z_pos = nbt.get_tag_node(['z'], tile_entity)
 
+                #print('te from ({}, {})'.format(x_pos['value'], z_pos['value']))
                 x_pos['value'] += coord_offset[0]
                 z_pos['value'] += coord_offset[1]
+                #print('te to ({}, {})'.format(x_pos['value'], z_pos['value']))
 
         # move chunks to new offset 
         x_pos = nbt.get_tag_node(['', 'Level', 'xPos'], chunk['chunk'])
         z_pos = nbt.get_tag_node(['', 'Level', 'zPos'], chunk['chunk'])
-
-        x_pos['value'] += (offset[0] * 32)
-        z_pos['value'] += (offset[1] * 32)
+        #print('from ({}, {})'.format(x_pos['value'], z_pos['value']))
+        x_pos['value'] += offset[0] * 32
+        z_pos['value'] += offset[1] * 32
+        #print('to ({}, {})'.format(x_pos['value'], z_pos['value']))
 
 
 def parse_region_data(header, region_data, region):

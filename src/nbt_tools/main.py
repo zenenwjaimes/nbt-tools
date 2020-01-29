@@ -8,6 +8,7 @@ offset from 0,0
 import argparse
 import io
 import sys
+import traceback
 import logging
 import shutil
 import os.path
@@ -21,6 +22,7 @@ from nbt_tools.region import math
 from nbt_tools.nbt import main as nbt
 from nbt_tools.mcfiles import main as maps
 from nbt_tools.region import main as region
+from nbt_tools.region import math as region_math
 
 __author__ = "zenen jaimes"
 __copyright__ = "zenen jaimes"
@@ -29,7 +31,7 @@ __license__ = "mit"
 _logger = logging.getLogger(__name__)
 
 
-def output_paths(coord_range, offset_coord):
+def output_paths(coord_range, offset_coord, from_path, to_path):
     """Output the needed mv commands to relocate region files
 
     Args:
@@ -42,7 +44,6 @@ def output_paths(coord_range, offset_coord):
 
     offset_x = offset_coord[0]
     offset_z = offset_coord[1]
-
     offset = math.coord_offset(offset_x, offset_z)
 
     min_bound = math.coord_to_region(coord_range[0], coord_range[1])
@@ -58,14 +59,16 @@ def output_paths(coord_range, offset_coord):
 
     [output_region_cmd(
         region,
-        'bb',
-        'pickle'
+        (offset_x, offset_z),
+        from_path,
+        to_path
     ) for region in mappings]
 
 
-def output_region_cmd(region, from_path, to_path):
-    from_xy = region[0]
-    to_xy = region[1]
+def output_region_cmd(reg, offset, from_path, to_path):
+    offset = math.coord_to_region(offset[0], offset[1])
+    from_xy = reg[0]
+    to_xy = reg[1]
 
     src_region_file = 'r.{0}.{1}.mca'.format(*from_xy)
     src_full_file = '{0}/{1}'.format(from_path, src_region_file)
@@ -75,13 +78,19 @@ def output_region_cmd(region, from_path, to_path):
 
     if (path.isfile(src_full_file)):
         try:
-            shutil.copyfile(src_full_file, dest_full_file)
+            nbt_data = region.load_region(src_full_file)
+            region.relocate_region(offset, nbt_data)
+            region.save_region(to_path, dest_region_file, nbt_data)
+
             print('Copied "{0}" to "{1}"\n'.format(
                 src_region_file,
                 dest_region_file
             ))
             ""
-        except Exception:
+        except Exception as e:
+            exc_type, exc_value, exc_traceback = sys.exc_info()
+            print(repr(traceback.format_exception(exc_type, exc_value,
+                                          exc_traceback)))
             msg = 'Source doesn\'t exist. Failed to copy "{0}" to "{1}"\n'
 
             print(msg.format(
@@ -90,11 +99,14 @@ def output_region_cmd(region, from_path, to_path):
             ))
 
     else:
-        print('Region File Exists "{0}" to "{1}"\n'.format(
+        print('Region File Doesn\'t Exist "{0}" to "{1}"\n'.format(
             src_full_file,
             dest_full_file
         ))
-        shutil.copyfile(src_full_file, dest_full_file)
+
+        #nbt_data = region.load_region(src_full_file)
+        #region.relocate_region(offset, nbt_data)
+        #region.save_region(to_path, dest_region_file, nbt_data)
 
 
 def parse_args(args):
@@ -142,18 +154,22 @@ def parse_args(args):
         help='dir path of where map images will be saved',
         default="./maps"
     )
+
     chunk_relocator_group = parser.add_argument_group(
         'Chunk Relocator',
         'Move chunk files from one save to another with an x,z offset'
     )
-    chunk_relocator_group.add_argument('--point1', help='(x,z) of one corner')
+    chunk_relocator_group.add_argument(
+        '--point1',
+        help='(x,z) of one corner'
+    )
     chunk_relocator_group.add_argument(
         '--point2',
         help='(x,z) of opposite corner'
     )
     chunk_relocator_group.add_argument(
         '--dest-point',
-        help='(x,z) destination of chunks'
+        help='(x,z) where to move your map relative to (0,0)'
     )
     chunk_relocator_group.add_argument(
         '--dest-path',
@@ -205,7 +221,14 @@ def chunk_relocate(args):
       args ([str]): command line parameter list
     """
     _logger.info("Starting the chunk relocation")
+    range1 = args.point1.split(',')
+    range2 = args.point2.split(',')
 
+    offset_coord = list(map(int, args.dest_point.split(',')))
+    ranges = list(map(int, range1 + range2))
+    print(ranges)
+
+    output_paths(ranges, offset_coord, args.src_path, args.dest_path)
 
 def parse_region_file(args):
     src_path = args.src_path
