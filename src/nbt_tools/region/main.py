@@ -139,8 +139,6 @@ def relocate_region(offset, nbt_data):
         )
 
         if references is not False:
-            import pprint
-
             for reference in references['value']:
                 fixed = []
 
@@ -158,6 +156,7 @@ def relocate_region(offset, nbt_data):
 
         if structures is not False:
             for structure in structures['value']:
+                struct_id = nbt.get_tag_node(['id'], structure['value'])
                 x_pos = nbt.get_tag_node(['ChunkX'], structure['value'])
                 z_pos = nbt.get_tag_node(['ChunkZ'], structure['value'])
                 bb_pos = nbt.get_tag_node(['BB'], structure['value'])
@@ -166,8 +165,9 @@ def relocate_region(offset, nbt_data):
                         structure['value']
                 )
 
-                x_pos['value'] += offset[0] * 32
-                z_pos['value'] += offset[1] * 32
+                if struct_id['value'] != 'INVALID':
+                    x_pos['value'] += offset[0] * 32
+                    z_pos['value'] += offset[1] * 32
 
                 if bb_pos is not False:
                     bb_positions = bb_pos['value']['value']
