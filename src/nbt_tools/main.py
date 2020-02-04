@@ -15,7 +15,9 @@ import os.path
 import os
 import fnmatch
 import gzip
+import numpy
 
+from multiprocessing import Pool
 from os import path
 from nbt_tools import __version__
 from nbt_tools.region import math
@@ -31,17 +33,7 @@ __license__ = "mit"
 _logger = logging.getLogger(__name__)
 
 
-def output_paths(coord_range, offset_coord, from_path, to_path):
-    """Output the needed mv commands to relocate region files
-
-    Args:
-        range_coords: list
-        offset_coords: list
-
-    Returns:
-      string list: commands needed to move region files
-    """
-
+def calculate_regions(coord_range, offset_coord, from_path, to_path):
     offset_x = offset_coord[0]
     offset_z = offset_coord[1]
     offset = math.coord_offset(offset_x, offset_z)
@@ -56,13 +48,35 @@ def output_paths(coord_range, offset_coord, from_path, to_path):
                 max_bound[1]
     )
     mappings = tuple(math.region_mappings(regions, offset))
+    args = []
+    l = numpy.array_split(mappings, 8)
+    for region in l:
+        args.append(
+                {
+                    'offset': (offset_x, offset_z),
+                    'from_path': from_path,
+                    'to_path': to_path,
+                    'regions': region
+                }
+        )
 
+    p = Pool(8)
+    p.map(pool_output_regions, args)
+    #[output_region_cmd(
+    #    region,
+    #    (offset_x, offset_z),
+    #    from_path,
+    #    to_path
+    #) for region in mappings]
+
+
+def pool_output_regions(data):
     [output_region_cmd(
         region,
-        (offset_x, offset_z),
-        from_path,
-        to_path
-    ) for region in mappings]
+        data['offset'],
+        data['from_path'],
+        data['to_path']
+    ) for region in data['regions']]
 
 
 def output_region_cmd(reg, offset, from_path, to_path):
@@ -227,7 +241,8 @@ def chunk_relocate(args):
     offset_coord = list(map(int, args.dest_point.split(',')))
     ranges = list(map(int, range1 + range2))
 
-    output_paths(ranges, offset_coord, args.src_path, args.dest_path)
+    calculate_regions(ranges, offset_coord, args.src_path, args.dest_path)
+
 
 def parse_region_file(args):
     src_path = args.src_path
