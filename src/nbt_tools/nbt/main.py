@@ -142,13 +142,13 @@ def pretty_print_nbt_data(nbt_data, indent=0):
 
                 if type(val) is list:
                     tag_name = tag['tag_name'] if 'tag_name' in tag else ''
-                    pretty_print(indent, TAG(tag['type']).name, tag_name)
+                    pretty_print(indent, TAG[tag['type']].name, tag_name)
                     pretty_print_nbt_data(val, indent + 1)
                 else:
                     if type(tag['value']) is dict:
                         pretty_print(
                                 indent,
-                                TAG(tag['type']).name,
+                                TAG[tag['type']].name,
                                 tag['tag_name']
                         )
 
@@ -159,7 +159,7 @@ def pretty_print_nbt_data(nbt_data, indent=0):
                     else:
                         pretty_print(
                                 indent,
-                                TAG(tag['type']).name,
+                                TAG[tag['type']].name,
                                 tag['tag_name'], tag['value']
                         )
             else:

@@ -16,6 +16,7 @@ import os
 import fnmatch
 import gzip
 import numpy
+import json
 
 from multiprocessing import Pool
 from os import path
@@ -147,14 +148,11 @@ def parse_args(args):
     )
     help_msg = 'Use this option for region files,' \
         ' or nbt files that aren\'t gzipped'
-    parser.add_argument(
-        '--unpacked-nbt',
-        action='store_true',
-        help=help_msg,
-        default=False
-    )
     group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument('--unpacked-nbt', action='store_true', help=help_msg)
     group.add_argument('--nbt', action='store_true')
+    group.add_argument('--json-dump', action='store_true')
+    group.add_argument('--json-load', action='store_true')
     group.add_argument('--gen-nbt', action='store_true')
     group.add_argument('--chunk-relocator', action='store_true')
     group.add_argument('--map-gen', action='store_true')
@@ -271,8 +269,34 @@ def parse_nbt_file(args):
     if args.loglevel == 'DEBUG':
         import pprint
         pprint.pprint(nbt_data)
+        return
     if args.loglevel == 'INFO':
         nbt.pretty_print_nbt_data(nbt_data, 1)
+        return
+
+    return nbt_data
+
+def nbt_to_json_dump(args):
+    nbt_data = parse_nbt_file(args)
+    print(json.dumps(nbt_data, indent=4))
+
+
+def json_dump_to_nbt(args):
+    lines = []
+    with open(args.src_path, 'r') as inf:
+        for line in inf:
+            lines.append(line)
+
+    dirty_data = json.loads(''.join(lines))
+
+    dest_path = args.src_path.replace('.json', '.dat')
+    bio = io.BytesIO()
+    buf = io.BufferedWriter(bio)
+    nbt_data = nbt.write_tag(buf, dirty_data)
+
+    s_out = gzip.compress(nbt_data)
+    with open(dest_path, 'wb+') as f:
+        f.write(s_out)
 
 
 def gen_nbt_file(args):
@@ -311,7 +335,10 @@ def run():
         parse_region_file(args)
     if args.gen_nbt:
         gen_nbt_file(args)
-
+    if args.json_dump:
+        nbt_to_json_dump(args)
+    if args.json_load:
+        json_dump_to_nbt(args)
 
 if __name__ == "__main__":
     run()
