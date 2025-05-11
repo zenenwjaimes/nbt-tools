@@ -1,5 +1,5 @@
 # nbt-tools
-Read/modify NBT files. Extra tools to modify core NBT files in a very popular blocky game.
+Read/modify NBT files. Extra tools to modify core NBT files in Minecraft.
 
 ```
 usage: main.py [-h] [--loglevel {DEBUG,INFO,WARNING,ERROR,CRITICAL}]
